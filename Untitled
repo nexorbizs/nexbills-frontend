@@ -1,3 +1,0 @@
-git add vercel.json
-git commit -m "Fix Vercel routing for React SPA"
-git push
