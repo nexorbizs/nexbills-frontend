@@ -4,7 +4,7 @@ import logo from "../assets/NexBills Logo.png";
 
 import Dashboard from "../pages/Dashboard";
 import Billing from "../pages/Billing";
-import Products from "../pages/products";
+import Products from "../pages/Products";
 import Customers from "../pages/Customers";
 import Sales from "../pages/Sales";
 import Reports from "../pages/Reports";
