@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
@@ -5,33 +6,30 @@ import MainLayout from "./layout/MainLayout";
 
 export default function App() {
 
-  const isLoggedIn = !!localStorage.getItem("currentUser");
+  const [isLoggedIn, setIsLoggedIn] = useState(
+    !!localStorage.getItem("token")
+  );
 
   return (
     <BrowserRouter>
-
       <Routes>
 
-        {/* LOGIN */}
         <Route
           path="/"
-          element={isLoggedIn ? <Navigate to="/dashboard" /> : <Login />}
+          element={isLoggedIn ? <Navigate to="/dashboard" /> : <Login setIsLoggedIn={setIsLoggedIn} />}
         />
 
-        {/* SIGNUP */}
         <Route
           path="/signup"
-          element={isLoggedIn ? <Navigate to="/dashboard" /> : <Signup />}
+          element={isLoggedIn ? <Navigate to="/dashboard" /> : <Signup goLogin={() => window.location.href = "/"} />}
         />
 
-        {/* APP */}
         <Route
           path="/*"
-          element={isLoggedIn ? <MainLayout /> : <Navigate to="/" />}
+          element={isLoggedIn ? <MainLayout setIsLoggedIn={setIsLoggedIn} /> : <Navigate to="/" />}
         />
 
       </Routes>
-
     </BrowserRouter>
   );
 }
