@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 export const countries = [
     { name: "India", key: "IND", dial: "+91" },
     { name: "United States", key: "USA", dial: "+1" },
@@ -20,27 +19,4 @@ export const countries = [
     { name: "South Africa", key: "ZAF", dial: "+27" },
     { name: "Brazil", key: "BRA", dial: "+55" },
     { name: "Mexico", key: "MEX", dial: "+52" }
-=======
-export const countries = [
-    { name: "India", key: "IND", dial: "+91" },
-    { name: "United States", key: "USA", dial: "+1" },
-    { name: "United Kingdom", key: "UK", dial: "+44" },
-    { name: "Russia", key: "RUS", dial: "+7" },
-    { name: "UAE", key: "UAE", dial: "+971" },
-    { name: "Canada", key: "CAN", dial: "+1" },
-    { name: "Australia", key: "AUS", dial: "+61" },
-    { name: "Germany", key: "GER", dial: "+49" },
-    { name: "France", key: "FRA", dial: "+33" },
-    { name: "China", key: "CHN", dial: "+86" },
-    { name: "Japan", key: "JPN", dial: "+81" },
-    { name: "Singapore", key: "SGP", dial: "+65" },
-    { name: "Malaysia", key: "MYS", dial: "+60" },
-    { name: "Sri Lanka", key: "LKA", dial: "+94" },
-    { name: "Nepal", key: "NPL", dial: "+977" },
-    { name: "Bangladesh", key: "BGD", dial: "+880" },
-    { name: "Pakistan", key: "PAK", dial: "+92" },
-    { name: "South Africa", key: "ZAF", dial: "+27" },
-    { name: "Brazil", key: "BRA", dial: "+55" },
-    { name: "Mexico", key: "MEX", dial: "+52" }
->>>>>>> 479c1c5f3a0fe0426cba61fe2c2eecef4c23e0a9
   ];

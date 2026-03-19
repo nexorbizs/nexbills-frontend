@@ -1,148 +1,121 @@
-<<<<<<< HEAD
 import { create } from "zustand";
 
 export const useCartStore = create((set, get) => ({
 
   cart: [],
-  companyId: null,
 
-  // ⭐ Initialize cart for tenant
+  /* ================= INIT ================= */
+
   initCart: () => {
-    const currentUser =
-      JSON.parse(localStorage.getItem("currentUser"));
 
-    if (!currentUser) {
-      set({ cart: [], companyId: null });
+    const company =
+      JSON.parse(localStorage.getItem("company"));
+
+    if (!company) {
+      set({ cart: [] });
       return;
     }
 
-    if (get().companyId !== currentUser.id) {
-      set({
-        cart: [],
-        companyId: currentUser.id
-      });
-    }
+    const saved =
+      JSON.parse(localStorage.getItem(`billing_cart_${company.id}`)) || [];
+
+    set({ cart: saved });
+
   },
+
+  /* ================= SAVE ================= */
+
+  saveCart: (cart) => {
+
+    const company =
+      JSON.parse(localStorage.getItem("company"));
+
+    if (!company) return;
+
+    localStorage.setItem(
+      `billing_cart_${company.id}`,
+      JSON.stringify(cart)
+    );
+
+    set({ cart });
+
+  },
+
+  /* ================= ADD ================= */
 
   addToCart: (product) => {
 
-    get().initCart();
+    const cart = get().cart;
 
-    const existing = get().cart.find(i => i.id === product.id);
+    const exists = cart.find(i => i.id === product.id);
 
-    if (existing) {
-      set({
-        cart: get().cart.map(i =>
-          i.id === product.id
-            ? { ...i, qty: i.qty + 1 }
-            : i
-        )
-      });
+    let updated;
+
+    if (exists) {
+      updated = cart.map(i =>
+        i.id === product.id
+          ? { ...i, qty: i.qty + 1 }
+          : i
+      );
     } else {
-      set({
-        cart: [...get().cart, { ...product, qty: 1 }]
-      });
+      updated = [
+        ...cart,
+        {
+          id: product.id,
+          name: product.name,
+          price: Number(product.price) || 0,
+          cgst: Number(product.cgst) || 0,
+          sgst: Number(product.sgst) || 0,
+          qty: 1
+        }
+      ];
     }
+
+    get().saveCart(updated);
+
   },
+
+  /* ================= INCREASE ================= */
 
   increaseQty: (id) => {
-    set({
-      cart: get().cart.map(i =>
-        i.id === id ? { ...i, qty: i.qty + 1 } : i
-      )
-    });
+
+    const updated = get().cart.map(i =>
+      i.id === id ? { ...i, qty: i.qty + 1 } : i
+    );
+
+    get().saveCart(updated);
+
   },
+
+  /* ================= DECREASE ================= */
 
   decreaseQty: (id) => {
-    const item = get().cart.find(i => i.id === id);
 
-    if (item.qty === 1) {
-      set({
-        cart: get().cart.filter(i => i.id !== id)
-      });
-    } else {
-      set({
-        cart: get().cart.map(i =>
-          i.id === id ? { ...i, qty: i.qty - 1 } : i
-        )
-      });
-    }
-  },
-
-  clearCart: () => set({ cart: [] })
-
-=======
-import { create } from "zustand";
-
-export const useCartStore = create((set, get) => ({
-
-  cart: [],
-  companyId: null,
-
-  // ⭐ Initialize cart for tenant
-  initCart: () => {
-    const currentUser =
-      JSON.parse(localStorage.getItem("currentUser"));
-
-    if (!currentUser) {
-      set({ cart: [], companyId: null });
-      return;
-    }
-
-    if (get().companyId !== currentUser.id) {
-      set({
-        cart: [],
-        companyId: currentUser.id
-      });
-    }
-  },
-
-  addToCart: (product) => {
-
-    get().initCart();
-
-    const existing = get().cart.find(i => i.id === product.id);
-
-    if (existing) {
-      set({
-        cart: get().cart.map(i =>
-          i.id === product.id
-            ? { ...i, qty: i.qty + 1 }
-            : i
-        )
-      });
-    } else {
-      set({
-        cart: [...get().cart, { ...product, qty: 1 }]
-      });
-    }
-  },
-
-  increaseQty: (id) => {
-    set({
-      cart: get().cart.map(i =>
-        i.id === id ? { ...i, qty: i.qty + 1 } : i
+    const updated = get().cart
+      .map(i =>
+        i.id === id
+          ? { ...i, qty: i.qty - 1 }
+          : i
       )
-    });
+      .filter(i => i.qty > 0);
+
+    get().saveCart(updated);
+
   },
 
-  decreaseQty: (id) => {
-    const item = get().cart.find(i => i.id === id);
+  /* ================= CLEAR ================= */
 
-    if (item.qty === 1) {
-      set({
-        cart: get().cart.filter(i => i.id !== id)
-      });
-    } else {
-      set({
-        cart: get().cart.map(i =>
-          i.id === id ? { ...i, qty: i.qty - 1 } : i
-        )
-      });
+  clearCart: () => {
+
+    const company =
+      JSON.parse(localStorage.getItem("company"));
+
+    if (company) {
+      localStorage.removeItem(`billing_cart_${company.id}`);
     }
-  },
 
-  clearCart: () => set({ cart: [] })
+    set({ cart: [] });
 
->>>>>>> 479c1c5f3a0fe0426cba61fe2c2eecef4c23e0a9
+  }
+
 }));

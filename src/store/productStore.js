@@ -1,214 +1,115 @@
-<<<<<<< HEAD
 import { create } from "zustand";
+import API from "../api";
 
 export const useProductStore = create((set, get) => ({
 
   products: [],
+  loading: false,
+  error: null,
 
-  loadProducts: () => {
-    const currentUser =
-      JSON.parse(localStorage.getItem("currentUser"));
+  /* ================= LOAD PRODUCTS ================= */
+  loadProducts: async () => {
+    try {
+      set({ loading: true });
 
-    if (!currentUser) {
-      set({ products: [] });
+      const res = await API.get("/products");
+
+      set({
+        products: res.data || [],
+        loading: false
+      });
+
+    } catch (err) {
+
+      set({
+        error: err.response?.data?.error || "Load failed",
+        loading: false
+      });
+
+    }
+  },
+
+  /* ================= ADD PRODUCT ================= */
+  addProduct: async (data) => {
+
+    try {
+
+      const res = await API.post("/products", data);
+
+      set(state => ({
+        products: [res.data, ...state.products]
+      }));
+
+      window.dispatchEvent(new Event("productUpdated"));
+
+    } catch (err) {
+
+      alert(err.response?.data?.error || "Add failed");
+
+    }
+  },
+
+  /* ================= DELETE PRODUCT ================= */
+  deleteProduct: async (id) => {
+
+    const prev = get().products;
+
+    set({
+      products: prev.filter(p => p.id !== id)
+    });
+
+    try {
+
+      await API.delete(`/products/${id}`);
+
+      window.dispatchEvent(new Event("productUpdated"));
+
+    } catch (err) {
+
+      alert("Delete failed");
+
+      set({ products: prev }); // rollback
+
+    }
+  },
+
+  /* ================= UPDATE STOCK ================= */
+  updateStock: async (id, change) => {
+
+    const products = get().products;
+
+    const target = products.find(p => p.id === id);
+
+    if (!target) return;
+
+    if (target.stock + change < 0) {
+      alert("Stock cannot be negative");
       return;
     }
 
-    const allProducts =
-      JSON.parse(localStorage.getItem("products")) || [];
-
-    const filtered =
-      allProducts.filter(p => p.companyId === currentUser.id);
-
-    set({ products: filtered });
-  },
-
-  addProduct: (product) => {
-    const all =
-      JSON.parse(localStorage.getItem("products")) || [];
-
-    localStorage.setItem(
-      "products",
-      JSON.stringify([...all, product])
+    const updated = products.map(p =>
+      p.id === id
+        ? { ...p, stock: p.stock + change }
+        : p
     );
 
-    get().loadProducts();
-  },
+    set({ products: updated });
 
-  deleteProduct: (id) => {
-    const all =
-      JSON.parse(localStorage.getItem("products")) || [];
+    try {
 
-    const updated = all.filter(p => p.id !== id);
+      await API.put(`/products/stock/${id}`, {
+        change
+      });
 
-    localStorage.setItem("products", JSON.stringify(updated));
+      window.dispatchEvent(new Event("productUpdated"));
 
-    get().loadProducts();
-  },
+    } catch {
 
-  // ⭐ NEW → STOCK STEPPER
-  updateStock: (id, change) => {
+      alert("Stock update failed");
 
-    const all =
-      JSON.parse(localStorage.getItem("products")) || [];
+      set({ products }); // rollback
 
-    const updated = all.map(p => {
-
-      if (p.id === id) {
-
-        let newStock = p.stock + change;
-
-        if (newStock < 0)
-          newStock = 0;
-
-        return {
-          ...p,
-          stock: newStock
-        };
-      }
-
-      return p;
-    });
-
-    localStorage.setItem("products", JSON.stringify(updated));
-
-    get().loadProducts();
-  },
-
-  // ⭐ USED IN BILLING
-  reduceStock: (id, soldQty) => {
-
-    const all =
-      JSON.parse(localStorage.getItem("products")) || [];
-
-    const updated = all.map(p => {
-
-      if (p.id === id) {
-
-        if (p.stock < soldQty) {
-          alert("Stock not available");
-          return p;
-        }
-
-        return {
-          ...p,
-          stock: p.stock - soldQty
-        };
-      }
-
-      return p;
-    });
-
-    localStorage.setItem("products", JSON.stringify(updated));
-
-    get().loadProducts();
-  }
-
-=======
-import { create } from "zustand";
-
-export const useProductStore = create((set, get) => ({
-
-  products: [],
-
-  loadProducts: () => {
-    const currentUser =
-      JSON.parse(localStorage.getItem("currentUser"));
-
-    if (!currentUser) {
-      set({ products: [] });
-      return;
     }
-
-    const allProducts =
-      JSON.parse(localStorage.getItem("products")) || [];
-
-    const filtered =
-      allProducts.filter(p => p.companyId === currentUser.id);
-
-    set({ products: filtered });
-  },
-
-  addProduct: (product) => {
-    const all =
-      JSON.parse(localStorage.getItem("products")) || [];
-
-    localStorage.setItem(
-      "products",
-      JSON.stringify([...all, product])
-    );
-
-    get().loadProducts();
-  },
-
-  deleteProduct: (id) => {
-    const all =
-      JSON.parse(localStorage.getItem("products")) || [];
-
-    const updated = all.filter(p => p.id !== id);
-
-    localStorage.setItem("products", JSON.stringify(updated));
-
-    get().loadProducts();
-  },
-
-  // ⭐ NEW → STOCK STEPPER
-  updateStock: (id, change) => {
-
-    const all =
-      JSON.parse(localStorage.getItem("products")) || [];
-
-    const updated = all.map(p => {
-
-      if (p.id === id) {
-
-        let newStock = p.stock + change;
-
-        if (newStock < 0)
-          newStock = 0;
-
-        return {
-          ...p,
-          stock: newStock
-        };
-      }
-
-      return p;
-    });
-
-    localStorage.setItem("products", JSON.stringify(updated));
-
-    get().loadProducts();
-  },
-
-  // ⭐ USED IN BILLING
-  reduceStock: (id, soldQty) => {
-
-    const all =
-      JSON.parse(localStorage.getItem("products")) || [];
-
-    const updated = all.map(p => {
-
-      if (p.id === id) {
-
-        if (p.stock < soldQty) {
-          alert("Stock not available");
-          return p;
-        }
-
-        return {
-          ...p,
-          stock: p.stock - soldQty
-        };
-      }
-
-      return p;
-    });
-
-    localStorage.setItem("products", JSON.stringify(updated));
-
-    get().loadProducts();
   }
 
->>>>>>> 479c1c5f3a0fe0426cba61fe2c2eecef4c23e0a9
 }));

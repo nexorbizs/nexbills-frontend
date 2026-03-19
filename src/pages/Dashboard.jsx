@@ -1,116 +1,148 @@
-<<<<<<< HEAD
 import { useEffect, useState } from "react";
-import { useProductStore } from "../store/productStore";
-import { getTenantData } from "../utils/tenant";
+import API from "../api";
 import {
-  LineChart,
-  Line,
-  XAxis,
-  YAxis,
+  PieChart,
+  Pie,
+  Cell,
   Tooltip,
   ResponsiveContainer,
-  CartesianGrid
+  Legend
 } from "recharts";
 
 export default function Dashboard() {
 
-  const { products, loadProducts } = useProductStore();
-
-  const [todayData, setTodayData] = useState([]);
-  const [weekData, setWeekData] = useState([]);
-  const [monthData, setMonthData] = useState([]);
-
   const [stats, setStats] = useState({
-    sales: 0,
-    customers: 0,
-    invoices: 0
+    revenue: 0,
+    invoices: 0,
+    products: 0,
+    customers: 0
   });
 
+  const [todayPie, setTodayPie] = useState([]);
+  const [weekPie, setWeekPie] = useState([]);
+  const [monthPie, setMonthPie] = useState([]);
+
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
+
   useEffect(() => {
-
-    const loadDashboard = () => {
-
-      loadProducts();
-
-      const invoices = getTenantData("invoices") || [];
-      const customers = getTenantData("customers") || [];
-
-      let totalSales = 0;
-
-      const now = new Date();
-
-      const today = [];
-      const week = [];
-      const month = [];
-
-      invoices.forEach(inv => {
-
-        totalSales += Number(inv.total) || 0;
-
-        const d = new Date(inv.date);
-        const diff = (now - d) / (1000 * 60 * 60 * 24);
-
-        if(diff < 1) today.push(inv);
-        if(diff <= 7) week.push(inv);
-        if(diff <= 30) month.push(inv);
-
-      });
-
-      setStats({
-        sales: totalSales,
-        customers: customers.length,
-        invoices: invoices.length
-      });
-
-      const group = (data) => {
-
-        const map = {};
-
-        data.forEach(i => {
-          const day = new Date(i.date).toLocaleDateString();
-          if(!map[day]) map[day] = 0;
-          map[day] += Number(i.total) || 0;
-        });
-
-        return Object.keys(map).map(k => ({
-          name: k,
-          revenue: map[k]
-        }));
-
-      };
-
-      setTodayData(group(today));
-      setWeekData(group(week));
-      setMonthData(group(month));
-
-    };
-
     loadDashboard();
 
-    window.addEventListener("invoiceUpdated", loadDashboard);
+    window.addEventListener("saleCreated", loadDashboard);
+    window.addEventListener("productUpdated", loadDashboard);
 
-    return () =>
-      window.removeEventListener("invoiceUpdated", loadDashboard);
+    return () => {
+      window.removeEventListener("saleCreated", loadDashboard);
+      window.removeEventListener("productUpdated", loadDashboard);
+    };
 
   }, []);
 
-  return (
-    <div className="p-6">
+  const loadDashboard = async () => {
 
-      <h1 className="text-3xl font-bold mb-6">
-        Sales Dashboard 🚀
+    try {
+
+      setError(false);
+
+      const todayFrom = startOfDay(1);
+      const weekFrom = startOfDay(7);
+      const monthFrom = startOfDay(30);
+      const now = new Date().toISOString();
+
+      const [
+        summaryRes,
+        todayRes,
+        weekRes,
+        monthRes
+      ] = await Promise.all([
+        API.get("/reports/dashboard"),
+        API.get(`/reports/sales?from=${todayFrom}&to=${now}`),
+        API.get(`/reports/sales?from=${weekFrom}&to=${now}`),
+        API.get(`/reports/sales?from=${monthFrom}&to=${now}`)
+      ]);
+
+      setStats(summaryRes.data);
+
+      setTodayPie(makePie(todayRes.data.sales));
+      setWeekPie(makePie(weekRes.data.sales));
+      setMonthPie(makePie(monthRes.data.sales));
+
+    } catch (err) {
+      console.log("Dashboard load error");
+      setError(true);
+    } finally {
+      setLoading(false);
+    }
+
+  };
+
+  const startOfDay = (days) => {
+    const d = new Date();
+    d.setDate(d.getDate() - days + 1);
+    d.setHours(0,0,0,0);
+    return d.toISOString();
+  };
+
+  const makePie = (data = []) => {
+
+    if (!data.length)
+      return [{ name: "No Data", value: 1 }];
+
+    let revenue = 0;
+    let productsSold = 0;
+    const customers = new Set();
+
+    data.forEach(inv => {
+
+      revenue += Number(inv.total) || 0;
+
+      if (inv.customerPhone)
+        customers.add(inv.customerPhone);
+
+      (inv.items || []).forEach(i => {
+        productsSold += Number(i.qty) || 0;
+      });
+
+    });
+
+    return [
+      { name: "Revenue", value: revenue },
+      { name: "Products Sold", value: productsSold },
+      { name: "Customers", value: customers.size }
+    ];
+  };
+
+  if (loading)
+    return <div className="p-6 text-lg">Loading Dashboard...</div>;
+
+  if (error)
+    return <div className="p-6 text-red-500">Dashboard failed to load</div>;
+
+  return (
+    <div>
+
+      <h1 className="text-2xl md:text-3xl font-bold mb-6">
+        Business Dashboard 🚀
       </h1>
 
-      <div className="grid grid-cols-4 gap-6 mb-6">
-        <Card title="Total Sales" value={`₹ ${stats.sales.toFixed(2)}`} />
-        <Card title="Products" value={products.length} />
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+
+        <Card title="Total Sales"
+          value={`₹ ${Number(stats.revenue).toLocaleString("en-IN")}`} />
+
+        <Card title="Products" value={stats.products} />
         <Card title="Customers" value={stats.customers} />
         <Card title="Invoices" value={stats.invoices} />
+
       </div>
 
-      <Graph title="Today's Revenue" data={todayData} color="#22c55e" />
-      <Graph title="Last 7 Days Revenue" data={weekData} color="#3b82f6" />
-      <Graph title="Last 30 Days Revenue" data={monthData} color="#f59e0b" />
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+
+        <PieBlock title="Today" data={todayPie} />
+        <PieBlock title="Last 7 Days" data={weekPie} />
+        <PieBlock title="Last 30 Days" data={monthPie} />
+
+      </div>
 
     </div>
   );
@@ -118,171 +150,45 @@ export default function Dashboard() {
 
 function Card({ title, value }) {
   return (
-    <div className="bg-white p-6 rounded-xl shadow">
+    <div className="bg-white p-5 rounded-xl shadow">
       <p className="text-gray-500">{title}</p>
       <h2 className="text-2xl font-bold">{value}</h2>
     </div>
   );
 }
 
-function Graph({ title, data, color }) {
-  return (
-    <div className="bg-white p-6 rounded-xl shadow mb-6">
-      <h3 className="text-lg font-semibold mb-4">{title}</h3>
+function PieBlock({ title, data }) {
 
-      <ResponsiveContainer width="100%" height={250}>
-        <LineChart data={data}>
-          <CartesianGrid strokeDasharray="3 3"/>
-          <XAxis dataKey="name"/>
-          <YAxis/>
-          <Tooltip/>
-          <Line type="monotone" dataKey="revenue" stroke={color} strokeWidth={3}/>
-        </LineChart>
-      </ResponsiveContainer>
-    </div>
-  );
-=======
-import { useEffect, useState } from "react";
-import { useProductStore } from "../store/productStore";
-import { getTenantData } from "../utils/tenant";
-import {
-  LineChart,
-  Line,
-  XAxis,
-  YAxis,
-  Tooltip,
-  ResponsiveContainer,
-  CartesianGrid
-} from "recharts";
-
-export default function Dashboard() {
-
-  const { products, loadProducts } = useProductStore();
-
-  const [todayData, setTodayData] = useState([]);
-  const [weekData, setWeekData] = useState([]);
-  const [monthData, setMonthData] = useState([]);
-
-  const [stats, setStats] = useState({
-    sales: 0,
-    customers: 0,
-    invoices: 0
-  });
-
-  useEffect(() => {
-
-    const loadDashboard = () => {
-
-      loadProducts();
-
-      const invoices = getTenantData("invoices") || [];
-      const customers = getTenantData("customers") || [];
-
-      let totalSales = 0;
-
-      const now = new Date();
-
-      const today = [];
-      const week = [];
-      const month = [];
-
-      invoices.forEach(inv => {
-
-        totalSales += Number(inv.total) || 0;
-
-        const d = new Date(inv.date);
-        const diff = (now - d) / (1000 * 60 * 60 * 24);
-
-        if(diff < 1) today.push(inv);
-        if(diff <= 7) week.push(inv);
-        if(diff <= 30) month.push(inv);
-
-      });
-
-      setStats({
-        sales: totalSales,
-        customers: customers.length,
-        invoices: invoices.length
-      });
-
-      const group = (data) => {
-
-        const map = {};
-
-        data.forEach(i => {
-          const day = new Date(i.date).toLocaleDateString();
-          if(!map[day]) map[day] = 0;
-          map[day] += Number(i.total) || 0;
-        });
-
-        return Object.keys(map).map(k => ({
-          name: k,
-          revenue: map[k]
-        }));
-
-      };
-
-      setTodayData(group(today));
-      setWeekData(group(week));
-      setMonthData(group(month));
-
-    };
-
-    loadDashboard();
-
-    window.addEventListener("invoiceUpdated", loadDashboard);
-
-    return () =>
-      window.removeEventListener("invoiceUpdated", loadDashboard);
-
-  }, []);
+  const COLORS = ["#22c55e", "#3b82f6", "#f59e0b"];
 
   return (
-    <div className="p-6">
+    <div className="bg-white p-5 rounded-xl shadow">
 
-      <h1 className="text-3xl font-bold mb-6">
-        Sales Dashboard 🚀
-      </h1>
+      <h3 className="text-lg font-semibold mb-4 text-center">
+        {title}
+      </h3>
 
-      <div className="grid grid-cols-4 gap-6 mb-6">
-        <Card title="Total Sales" value={`₹ ${stats.sales.toFixed(2)}`} />
-        <Card title="Products" value={products.length} />
-        <Card title="Customers" value={stats.customers} />
-        <Card title="Invoices" value={stats.invoices} />
+      <div className="w-full h-[280px]">
+        <ResponsiveContainer>
+          <PieChart>
+            <Pie
+              data={data}
+              dataKey="value"
+              nameKey="name"
+              outerRadius="75%"
+              label
+            >
+              {data.map((entry, index) => (
+                <Cell key={index} fill={COLORS[index % COLORS.length]} />
+              ))}
+            </Pie>
+
+            <Tooltip />
+            <Legend verticalAlign="bottom" height={36}/>
+          </PieChart>
+        </ResponsiveContainer>
       </div>
 
-      <Graph title="Today's Revenue" data={todayData} color="#22c55e" />
-      <Graph title="Last 7 Days Revenue" data={weekData} color="#3b82f6" />
-      <Graph title="Last 30 Days Revenue" data={monthData} color="#f59e0b" />
-
     </div>
   );
-}
-
-function Card({ title, value }) {
-  return (
-    <div className="bg-white p-6 rounded-xl shadow">
-      <p className="text-gray-500">{title}</p>
-      <h2 className="text-2xl font-bold">{value}</h2>
-    </div>
-  );
-}
-
-function Graph({ title, data, color }) {
-  return (
-    <div className="bg-white p-6 rounded-xl shadow mb-6">
-      <h3 className="text-lg font-semibold mb-4">{title}</h3>
-
-      <ResponsiveContainer width="100%" height={250}>
-        <LineChart data={data}>
-          <CartesianGrid strokeDasharray="3 3"/>
-          <XAxis dataKey="name"/>
-          <YAxis/>
-          <Tooltip/>
-          <Line type="monotone" dataKey="revenue" stroke={color} strokeWidth={3}/>
-        </LineChart>
-      </ResponsiveContainer>
-    </div>
-  );
->>>>>>> 479c1c5f3a0fe0426cba61fe2c2eecef4c23e0a9
 }

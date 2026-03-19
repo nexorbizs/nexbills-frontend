@@ -1,10 +1,10 @@
-<<<<<<< HEAD
 import { useState, useEffect } from "react";
-import { useProductStore } from "../store/productStore";
+import API from "../api";
 
 export default function Products(){
 
-  const { products, addProduct, deleteProduct, loadProducts, updateStock } = useProductStore();
+  const [products, setProducts] = useState([]);
+  const [activeIndex, setActiveIndex] = useState(0);
 
   const [form, setForm] = useState({
     name: "",
@@ -20,455 +20,215 @@ export default function Products(){
     loadProducts();
   }, []);
 
-  const validate = () => {
-
-    if(!form.name.trim())
-      return alert("Product name required");
-
-    const currentUser =
-      JSON.parse(localStorage.getItem("currentUser"));
-
-    const all =
-      JSON.parse(localStorage.getItem("products")) || [];
-
-    if(all.find(p =>
-      p.sku?.toUpperCase() === form.sku.toUpperCase()
-      && p.companyId === currentUser.id
-    ))
-      return alert("SKU must be unique");
-
-    if(all.find(p =>
-      p.hsn?.toUpperCase() === form.hsn.toUpperCase()
-      && p.companyId === currentUser.id
-    ))
-      return alert("HSN must be unique");
-
-    if(Number(form.price) <= 0)
-      return alert("Invalid price");
-
-    if(Number(form.stock) < 0)
-      return alert("Invalid stock");
-
-    if(Number(form.cgst) > 50 || Number(form.sgst) > 50)
-      return alert("Invalid GST");
-
-    return true;
+  const loadProducts = async () => {
+    try {
+      const res = await API.get("/products");
+      setProducts(res.data || []);
+    } catch {
+      alert("Failed to load products");
+    }
   };
 
-  const handleAdd = () => {
-
-    if(!validate()) return;
-
-    const currentUser =
-      JSON.parse(localStorage.getItem("currentUser"));
-
-    addProduct({
-      ...form,
-      id: Date.now(),
-      companyId: currentUser.id,
-      sku: form.sku.toUpperCase(),
-      hsn: form.hsn.toUpperCase(),
-      price: Number(form.price),
-      stock: Number(form.stock),
-      cgst: Number(form.cgst),
-      sgst: Number(form.sgst)
-    });
-
-    setForm({
-      name: "",
-      sku: "",
-      hsn: "",
-      price: "",
-      stock: "",
-      cgst: "",
-      sgst: ""
-    });
-  };
-
-  return (
-    <div className="p-8">
-
-      <h1 className="text-4xl font-bold mb-8">
-        Product Inventory
-      </h1>
-
-      {/* FORM */}
-      <div className="bg-white shadow-xl rounded-2xl p-6 mb-8">
-
-        <h2 className="text-xl font-semibold mb-4">
-          Add New Product
-        </h2>
-
-        <div className="grid grid-cols-7 gap-4">
-
-          <input
-            placeholder="Product Name"
-            value={form.name}
-            onChange={e=>setForm({...form,name:e.target.value})}
-            className="border p-3 rounded-xl"
-          />
-
-          <input
-            placeholder="SKU"
-            value={form.sku}
-            onChange={e=>setForm({...form,sku:e.target.value})}
-            className="border p-3 rounded-xl"
-          />
-
-          <input
-            placeholder="HSN"
-            value={form.hsn}
-            onChange={e=>setForm({...form,hsn:e.target.value})}
-            className="border p-3 rounded-xl"
-          />
-
-          <input
-            placeholder="Price"
-            value={form.price}
-            onChange={e=>{
-              const val = e.target.value;
-              if(/^\d*\.?\d*$/.test(val))
-                setForm({...form,price:val});
-            }}
-            className="border p-3 rounded-xl"
-          />
-
-          <input
-            placeholder="Stock"
-            value={form.stock}
-            onChange={e=>{
-              const val = e.target.value.replace(/\D/g,"");
-              setForm({...form,stock:val});
-            }}
-            className="border p-3 rounded-xl"
-          />
-
-          <input
-            placeholder="CGST %"
-            value={form.cgst}
-            onChange={e=>{
-              const val = e.target.value.replace(/\D/g,"");
-              setForm({...form,cgst:val});
-            }}
-            className="border p-3 rounded-xl"
-          />
-
-          <input
-            placeholder="SGST %"
-            value={form.sgst}
-            onChange={e=>{
-              const val = e.target.value.replace(/\D/g,"");
-              setForm({...form,sgst:val});
-            }}
-            className="border p-3 rounded-xl"
-          />
-
-        </div>
-
-        <button
-          onClick={handleAdd}
-          className="mt-6 bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 rounded-xl font-semibold"
-        >
-          Add Product
-        </button>
-
-      </div>
-
-      {/* TABLE */}
-      <div className="bg-white shadow-xl rounded-2xl overflow-hidden">
-
-        <table className="w-full text-sm">
-
-          <thead className="bg-slate-100">
-            <tr>
-              <th className="p-4 text-left">Name</th>
-              <th className="p-4">SKU</th>
-              <th className="p-4">HSN</th>
-              <th className="p-4">Price</th>
-              <th className="p-4">Stock</th>
-              <th className="p-4">CGST</th>
-              <th className="p-4">SGST</th>
-              <th className="p-4">Action</th>
-            </tr>
-          </thead>
-
-          <tbody>
-            {products.map(p => (
-              <tr key={p.id} className="border-t hover:bg-slate-50">
-
-                <td className="p-4 font-medium">{p.name}</td>
-                <td className="p-4 text-center">{p.sku}</td>
-                <td className="p-4 text-center">{p.hsn}</td>
-                <td className="p-4 text-center">₹ {p.price}</td>
-
-                <td className="p-4 text-center">
-                  <div className="flex justify-center gap-2">
-
-                    <button
-                      onClick={()=>updateStock(p.id,-1)}
-                      className="px-3 py-1 bg-slate-200 rounded-lg"
-                    >-</button>
-
-                    <span className="font-bold">{p.stock}</span>
-
-                    <button
-                      onClick={()=>updateStock(p.id,1)}
-                      className="px-3 py-1 bg-slate-200 rounded-lg"
-                    >+</button>
-
-                  </div>
-                </td>
-
-                <td className="p-4 text-center">{p.cgst}%</td>
-                <td className="p-4 text-center">{p.sgst}%</td>
-
-                <td className="p-4 text-center">
-                  <button
-                    onClick={()=>deleteProduct(p.id)}
-                    className="text-red-500 hover:text-red-700 font-semibold"
-                  >
-                    Delete
-                  </button>
-                </td>
-
-              </tr>
-            ))}
-          </tbody>
-
-        </table>
-
-      </div>
-
-    </div>
-  );
-=======
-import { useState, useEffect } from "react";
-import { useProductStore } from "../store/productStore";
-
-export default function Products(){
-
-  const { products, addProduct, deleteProduct, loadProducts, updateStock } = useProductStore();
-
-  const [form, setForm] = useState({
-    name: "",
-    sku: "",
-    hsn: "",
-    price: "",
-    stock: "",
-    cgst: "",
-    sgst: ""
-  });
+  /* ================= KEYBOARD POS ================= */
 
   useEffect(() => {
-    loadProducts();
-  }, []);
 
-  const validate = () => {
+    const handleKey = (e) => {
+  
+      if (!products.length) return;
+  
+      const current = products[activeIndex];
+  
+      // ⭐ CHANGE ROW
+      if (e.key === "ArrowRight") {
+        e.preventDefault();
+        setActiveIndex(i => i < products.length - 1 ? i + 1 : 0);
+        return;
+      }
+  
+      if (e.key === "ArrowLeft") {
+        e.preventDefault();
+        setActiveIndex(i => i > 0 ? i - 1 : products.length - 1);
+        return;
+      }
+  
+      // ⭐ STOCK CONTROL
+      if (e.key === "ArrowUp") {
+        e.preventDefault();
+        updateStock(current.id, 1);
+        return;
+      }
+  
+      if (e.key === "ArrowDown") {
+        e.preventDefault();
+        updateStock(current.id, -1);
+        return;
+      }
+  
+      // ⭐ ADD PRODUCT (ENTER)
+      if (e.key === "Enter") {
+        e.preventDefault();
+        handleAdd();
+        return;
+      }
+  
+      // ⭐ DELETE
+      if (e.key === "Delete") {
+        e.preventDefault();
+        deleteProduct(current.id);
+        return;
+      }
+  
+    };
+  
+    window.addEventListener("keydown", handleKey);
+    return () => window.removeEventListener("keydown", handleKey);
+  
+  }, [products, activeIndex, form]);
 
-    if(!form.name.trim())
-      return alert("Product name required");
+  /* ================= STOCK UPDATE (NO RELOAD) ================= */
 
-    const currentUser =
-      JSON.parse(localStorage.getItem("currentUser"));
+  const updateStock = async (id, change) => {
+    try {
 
-    const all =
-      JSON.parse(localStorage.getItem("products")) || [];
+      await API.put(`/products/stock/${id}`, { change });
 
-    if(all.find(p =>
-      p.sku?.toUpperCase() === form.sku.toUpperCase()
-      && p.companyId === currentUser.id
-    ))
-      return alert("SKU must be unique");
+      setProducts(prev =>
+        prev.map(p =>
+          p.id === id
+            ? { ...p, stock: p.stock + change }
+            : p
+        )
+      );
 
-    if(all.find(p =>
-      p.hsn?.toUpperCase() === form.hsn.toUpperCase()
-      && p.companyId === currentUser.id
-    ))
-      return alert("HSN must be unique");
-
-    if(Number(form.price) <= 0)
-      return alert("Invalid price");
-
-    if(Number(form.stock) < 0)
-      return alert("Invalid stock");
-
-    if(Number(form.cgst) > 50 || Number(form.sgst) > 50)
-      return alert("Invalid GST");
-
-    return true;
+    } catch {
+      alert("Stock update failed");
+    }
   };
 
-  const handleAdd = () => {
+  const deleteProduct = async (id) => {
+    try {
+      await API.delete(`/products/${id}`);
+      setProducts(prev => prev.filter(p => p.id !== id));
+    } catch {
+      alert("Delete failed");
+    }
+  };
 
-    if(!validate()) return;
+  const handleAdd = async () => {
 
-    const currentUser =
-      JSON.parse(localStorage.getItem("currentUser"));
+    if(!form.name.trim()) return alert("Product name required");
 
-    addProduct({
-      ...form,
-      id: Date.now(),
-      companyId: currentUser.id,
-      sku: form.sku.toUpperCase(),
-      hsn: form.hsn.toUpperCase(),
-      price: Number(form.price),
-      stock: Number(form.stock),
-      cgst: Number(form.cgst),
-      sgst: Number(form.sgst)
-    });
+    try {
 
-    setForm({
-      name: "",
-      sku: "",
-      hsn: "",
-      price: "",
-      stock: "",
-      cgst: "",
-      sgst: ""
-    });
+      const res = await API.post("/products", {
+        ...form,
+        price: Number(form.price),
+        stock: Number(form.stock),
+        cgst: Number(form.cgst || 0),
+        sgst: Number(form.sgst || 0)
+      });
+
+      setProducts(prev => [res.data, ...prev]);
+
+      setForm({
+        name: "",
+        sku: "",
+        hsn: "",
+        price: "",
+        stock: "",
+        cgst: "",
+        sgst: ""
+      });
+
+    } catch {
+      alert("Add product failed");
+    }
   };
 
   return (
-    <div className="p-8">
+    <div className="p-6">
 
-      <h1 className="text-4xl font-bold mb-8">
-        Product Inventory
-      </h1>
+      <h1 className="text-3xl font-bold mb-6">Product Inventory</h1>
 
-      {/* FORM */}
-      <div className="bg-white shadow-xl rounded-2xl p-6 mb-8">
+      {/* ADD FORM */}
 
-        <h2 className="text-xl font-semibold mb-4">
-          Add New Product
-        </h2>
+      <div className="bg-white p-6 rounded-xl shadow mb-6 grid grid-cols-7 gap-3">
 
-        <div className="grid grid-cols-7 gap-4">
-
+        {Object.keys(form).map(key => (
           <input
-            placeholder="Product Name"
-            value={form.name}
-            onChange={e=>setForm({...form,name:e.target.value})}
-            className="border p-3 rounded-xl"
+            key={key}
+            placeholder={key.toUpperCase()}
+            value={form[key]}
+            onChange={e => setForm({ ...form, [key]: e.target.value })}
+            className="border p-3 rounded-lg"
           />
-
-          <input
-            placeholder="SKU"
-            value={form.sku}
-            onChange={e=>setForm({...form,sku:e.target.value})}
-            className="border p-3 rounded-xl"
-          />
-
-          <input
-            placeholder="HSN"
-            value={form.hsn}
-            onChange={e=>setForm({...form,hsn:e.target.value})}
-            className="border p-3 rounded-xl"
-          />
-
-          <input
-            placeholder="Price"
-            value={form.price}
-            onChange={e=>{
-              const val = e.target.value;
-              if(/^\d*\.?\d*$/.test(val))
-                setForm({...form,price:val});
-            }}
-            className="border p-3 rounded-xl"
-          />
-
-          <input
-            placeholder="Stock"
-            value={form.stock}
-            onChange={e=>{
-              const val = e.target.value.replace(/\D/g,"");
-              setForm({...form,stock:val});
-            }}
-            className="border p-3 rounded-xl"
-          />
-
-          <input
-            placeholder="CGST %"
-            value={form.cgst}
-            onChange={e=>{
-              const val = e.target.value.replace(/\D/g,"");
-              setForm({...form,cgst:val});
-            }}
-            className="border p-3 rounded-xl"
-          />
-
-          <input
-            placeholder="SGST %"
-            value={form.sgst}
-            onChange={e=>{
-              const val = e.target.value.replace(/\D/g,"");
-              setForm({...form,sgst:val});
-            }}
-            className="border p-3 rounded-xl"
-          />
-
-        </div>
+        ))}
 
         <button
           onClick={handleAdd}
-          className="mt-6 bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 rounded-xl font-semibold"
+          className="bg-blue-600 text-white rounded-lg"
         >
-          Add Product
+          ADD
         </button>
 
       </div>
 
       {/* TABLE */}
-      <div className="bg-white shadow-xl rounded-2xl overflow-hidden">
 
-        <table className="w-full text-sm">
+      <div className="bg-white rounded-xl shadow overflow-x-auto">
+
+        <table className="w-full min-w-[900px]">
 
           <thead className="bg-slate-100">
             <tr>
-              <th className="p-4 text-left">Name</th>
-              <th className="p-4">SKU</th>
-              <th className="p-4">HSN</th>
-              <th className="p-4">Price</th>
-              <th className="p-4">Stock</th>
-              <th className="p-4">CGST</th>
-              <th className="p-4">SGST</th>
-              <th className="p-4">Action</th>
+              <th className="p-3">Name</th>
+              <th>SKU</th>
+              <th>HSN</th>
+              <th>Price</th>
+              <th>Stock</th>
+              <th>CGST</th>
+              <th>SGST</th>
+              <th>Action</th>
             </tr>
           </thead>
 
           <tbody>
-            {products.map(p => (
-              <tr key={p.id} className="border-t hover:bg-slate-50">
 
-                <td className="p-4 font-medium">{p.name}</td>
-                <td className="p-4 text-center">{p.sku}</td>
-                <td className="p-4 text-center">{p.hsn}</td>
-                <td className="p-4 text-center">₹ {p.price}</td>
+            {products.map((p,index)=>(
+              <tr key={p.id}
+                className={`border-t ${index===activeIndex?"bg-blue-100":""}`}>
 
-                <td className="p-4 text-center">
+                <td className="p-3">{p.name}</td>
+                <td>{p.sku}</td>
+                <td>{p.hsn}</td>
+                <td>₹ {p.price}</td>
+
+                <td>
                   <div className="flex justify-center gap-2">
 
                     <button
                       onClick={()=>updateStock(p.id,-1)}
-                      className="px-3 py-1 bg-slate-200 rounded-lg"
+                      className="w-8 h-8 bg-red-500 text-white rounded"
                     >-</button>
 
-                    <span className="font-bold">{p.stock}</span>
+                    <span>{p.stock}</span>
 
                     <button
                       onClick={()=>updateStock(p.id,1)}
-                      className="px-3 py-1 bg-slate-200 rounded-lg"
+                      className="w-8 h-8 bg-green-500 text-white rounded"
                     >+</button>
 
                   </div>
                 </td>
 
-                <td className="p-4 text-center">{p.cgst}%</td>
-                <td className="p-4 text-center">{p.sgst}%</td>
+                <td>{p.cgst}%</td>
+                <td>{p.sgst}%</td>
 
-                <td className="p-4 text-center">
+                <td>
                   <button
                     onClick={()=>deleteProduct(p.id)}
-                    className="text-red-500 hover:text-red-700 font-semibold"
+                    className="bg-black text-white px-3 py-1 rounded"
                   >
                     Delete
                   </button>
@@ -476,6 +236,7 @@ export default function Products(){
 
               </tr>
             ))}
+
           </tbody>
 
         </table>
@@ -484,5 +245,4 @@ export default function Products(){
 
     </div>
   );
->>>>>>> 479c1c5f3a0fe0426cba61fe2c2eecef4c23e0a9
 }

@@ -1,82 +1,147 @@
 import { useState } from "react";
+import logo from "../assets/NexBills Logo.png";
+import API from "../api";
 
 export default function Login({ setIsLoggedIn, goSignup }) {
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
-  const handleLogin = () => {
+  const [loading, setLoading] = useState(false);
 
-    const users = JSON.parse(localStorage.getItem("users")) || [];
+  /* ================= VALIDATION ================= */
 
-    const user = users.find(
-      u => u.email === email && u.password === password
-    );
+  const validate = () => {
 
-    if(!user){
-      alert("Invalid Email or Password");
-      return;
+    if (!email.trim())
+      return alert("Email required");
+
+    if (!/^\S+@\S+\.\S+$/.test(email))
+      return alert("Invalid email");
+
+    if (!password)
+      return alert("Password required");
+
+    if (password.length < 6)
+      return alert("Password must be minimum 6 characters");
+
+    return true;
+  };
+
+  /* ================= LOGIN ================= */
+
+  const handleLogin = async () => {
+
+    if (loading) return;
+
+    if (!validate()) return;
+
+    setLoading(true);
+
+    try {
+
+      const res = await API.post("/auth/login", {
+        email: email.trim().toLowerCase(),
+        password
+      });
+
+      const { token, company } = res.data;
+
+      /* ⭐ STORE SESSION */
+      localStorage.setItem("token", token);
+      localStorage.setItem("company", JSON.stringify(company));
+
+      /* ⭐ LOGIN SUCCESS */
+      setIsLoggedIn(true);
+
+    } catch (err) {
+
+      alert(err.response?.data?.message || "Login Failed");
+
+      setLoading(false);
     }
+  };
 
-    localStorage.setItem("currentUser", JSON.stringify(user));
-    setIsLoggedIn(true);
+  /* ================= ENTER KEY ================= */
+
+  const handleKeyDown = (e) => {
+    if (e.key === "Enter") {
+      handleLogin();
+    }
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 to-slate-800 flex items-center justify-center">
+    <div className="relative min-h-screen flex items-center justify-center overflow-hidden bg-black p-6">
 
-      <div className="bg-white w-[420px] p-10 rounded-2xl shadow-2xl">
+      {/* PARTICLES */}
+      <div className="absolute inset-0">
+        {[...Array(60)].map((_, i) => (
+          <span
+            key={i}
+            className="absolute bg-white rounded-full opacity-40"
+            style={{
+              width: Math.random() * 3 + 1,
+              height: Math.random() * 3 + 1,
+              left: Math.random() * 100 + "%",
+              top: Math.random() * 100 + "%",
+              animation: `particleMove ${10 + Math.random() * 20}s linear infinite`,
+            }}
+          />
+        ))}
+      </div>
 
-        {/* BRAND */}
-        <div className="mb-8 text-center">
+      {/* GLOW */}
+      <div className="absolute w-[700px] h-[700px] bg-indigo-500 rounded-full blur-[200px] opacity-20 top-[-200px] left-[-200px]" />
+      <div className="absolute w-[600px] h-[600px] bg-purple-500 rounded-full blur-[180px] opacity-20 bottom-[-200px] right-[-200px]" />
 
-          <h1 className="text-3xl font-bold text-slate-900">
-            NexBills
-          </h1>
+      {/* CARD */}
+      <div className="relative z-10 bg-white/10 backdrop-blur-xl border border-white/20 w-full max-w-md p-8 md:p-10 rounded-3xl shadow-2xl text-white">
 
-          <p className="text-xs text-slate-400 mt-1">
-            powered by NexorBizs Technologies
-          </p>
-
+        <div className="mb-8 flex items-center justify-center gap-3">
+          <img src={logo} className="w-14 h-14 bg-white rounded-full p-1" />
+          <div>
+            <h1 className="text-2xl md:text-3xl font-bold">
+              NexBills
+            </h1>
+            <p className="text-xs text-slate-300">
+              powered by NexorBizs Technologies
+            </p>
+          </div>
         </div>
 
-        {/* TITLE */}
-        <h2 className="text-xl font-semibold mb-6 text-center">
+        <h2 className="text-lg md:text-xl font-semibold mb-6 text-center">
           Client Login
         </h2>
 
-        {/* EMAIL */}
         <input
           placeholder="Client Email"
-          className="w-full border border-slate-300 p-3 rounded-xl mb-4 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          autoFocus
           value={email}
-          onChange={e=>setEmail(e.target.value)}
+          onChange={e => setEmail(e.target.value)}
+          onKeyDown={handleKeyDown}
+          className="w-full border border-white/30 bg-white/10 p-3 rounded-xl mb-4 placeholder-white/60 focus:outline-none focus:ring-2 focus:ring-indigo-500"
         />
 
-        {/* PASSWORD */}
         <input
           type="password"
           placeholder="Password"
-          className="w-full border border-slate-300 p-3 rounded-xl mb-6 focus:outline-none focus:ring-2 focus:ring-blue-500"
           value={password}
-          onChange={e=>setPassword(e.target.value)}
+          onChange={e => setPassword(e.target.value)}
+          onKeyDown={handleKeyDown}
+          className="w-full border border-white/30 bg-white/10 p-3 rounded-xl mb-6 placeholder-white/60 focus:outline-none focus:ring-2 focus:ring-indigo-500"
         />
 
-        {/* BUTTON */}
         <button
           onClick={handleLogin}
-          className="w-full bg-blue-600 hover:bg-blue-700 text-white p-3 rounded-xl font-semibold transition"
+          disabled={loading}
+          className="w-full bg-indigo-600 hover:bg-indigo-700 text-white p-3 rounded-xl font-semibold transition"
         >
-          Login to NexBills
+          {loading ? "Logging in..." : "Login to NexBills"}
         </button>
-        <p
-  onClick={goSignup}
-  className="text-blue-600 text-sm mt-3 cursor-pointer"
->
-  Create Client Account
-</p>
-      </div>
 
+        
+
+      </div>
     </div>
   );
 }

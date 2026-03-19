@@ -12,8 +12,16 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@prisma/client": "^5.22.0",
+    "axios": "^1.13.6",
+    "bcrypt": "^6.0.0",
+    "cors": "^2.8.6",
+    "dotenv": "^17.3.1",
+    "express": "^5.2.1",
     "file-saver": "^2.0.5",
+    "jsonwebtoken": "^9.0.3",
     "lucide-react": "^0.577.0",
+    "prisma": "^5.22.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "react-router-dom": "^6.26.2",
@@ -28,5 +36,18 @@
     "postcss": "^8.4.49",
     "tailwindcss": "^3.4.13",
     "vite": "^5.4.8"
-  }
+  },
+  "description": "This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.",
+  "main": "eslint.config.js",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/nexorbizs/Billing-SMEs.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/nexorbizs/Billing-SMEs/issues"
+  },
+  "homepage": "https://github.com/nexorbizs/Billing-SMEs#readme"
 }
