@@ -27,9 +27,9 @@ export default function Sidebar({ setPage, sidebarOpen, setSidebarOpen }) {
 
   const handleLogout = () => {
     clearCart();
-    localStorage.removeItem("currentUser");
-    loadProducts();
-    window.location.reload();
+    localStorage.removeItem("token");
+    localStorage.removeItem("company");
+    window.location.href = "/";
   };
 
   const menu = [
