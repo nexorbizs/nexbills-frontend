@@ -88,10 +88,11 @@ export default function Signup({ goLogin }) {
     try {
 
       await API.post("/auth/signup", {
-        company: form.company.trim(),
-        email: form.email.trim().toLowerCase(),
-        password: form.password
-      });
+  name: form.company.trim(),      
+  email: form.email.trim().toLowerCase(),
+  password: form.password,
+  secret: codeInput           
+});
 
       alert("Client account created ✅");
 
