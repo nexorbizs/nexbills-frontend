@@ -147,88 +147,92 @@ export default function Products(){
   };
 
   return (
-    <div className="p-6">
+    <div>
 
-      <h1 className="text-3xl font-bold mb-6">Product Inventory</h1>
+      <h1 className="text-2xl md:text-3xl font-bold mb-6">Product Inventory</h1>
 
       {/* ADD FORM */}
 
-      <div className="bg-white p-6 rounded-xl shadow mb-6 grid grid-cols-7 gap-3">
+      <div className="bg-white p-4 md:p-6 rounded-xl shadow mb-6">
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-8 gap-3">
 
-        {Object.keys(form).map(key => (
-          <input
-            key={key}
-            placeholder={key.toUpperCase()}
-            value={form[key]}
-            onChange={e => setForm({ ...form, [key]: e.target.value })}
-            className="border p-3 rounded-lg"
-          />
-        ))}
+          {Object.keys(form).map(key => (
+            <input
+              key={key}
+              placeholder={key.toUpperCase()}
+              value={form[key]}
+              onChange={e => setForm({ ...form, [key]: e.target.value })}
+              className="border p-3 rounded-lg text-sm"
+            />
+          ))}
 
-        <button
-          onClick={handleAdd}
-          className="bg-blue-600 text-white rounded-lg"
-        >
-          ADD
-        </button>
+          <button
+            onClick={handleAdd}
+            className="bg-blue-600 hover:bg-blue-700 text-white rounded-lg p-3 font-semibold transition"
+          >
+            ADD
+          </button>
 
+        </div>
       </div>
 
       {/* TABLE */}
 
       <div className="bg-white rounded-xl shadow overflow-x-auto">
 
-        <table className="w-full min-w-[900px]">
+        <table className="w-full min-w-[700px] text-sm">
 
           <thead className="bg-slate-100">
             <tr>
-              <th className="p-3">Name</th>
-              <th>SKU</th>
-              <th>HSN</th>
-              <th>Price</th>
-              <th>Stock</th>
-              <th>CGST</th>
-              <th>SGST</th>
-              <th>Action</th>
+              <th className="p-3 text-left">Name</th>
+              <th className="p-3 text-left">SKU</th>
+              <th className="p-3 text-left">HSN</th>
+              <th className="p-3 text-right">Price</th>
+              <th className="p-3 text-center">Stock</th>
+              <th className="p-3 text-center">CGST</th>
+              <th className="p-3 text-center">SGST</th>
+              <th className="p-3 text-center">Action</th>
             </tr>
           </thead>
 
           <tbody>
 
-            {products.map((p,index)=>(
-              <tr key={p.id}
-                className={`border-t ${index===activeIndex?"bg-blue-100":""}`}>
+            {products.map((p, index) => (
+              <tr
+                key={p.id}
+                className={`border-t ${index === activeIndex ? "bg-blue-100" : "hover:bg-slate-50"}`}
+              >
 
-                <td className="p-3">{p.name}</td>
-                <td>{p.sku}</td>
-                <td>{p.hsn}</td>
-                <td>₹ {p.price}</td>
+                <td className="p-3 font-medium">{p.name}</td>
+                <td className="p-3 text-slate-500">{p.sku}</td>
+                <td className="p-3 text-slate-500">{p.hsn}</td>
+                <td className="p-3 text-right">₹ {p.price}</td>
 
-                <td>
-                  <div className="flex justify-center gap-2">
+                <td className="p-3">
+                  <div className="flex justify-center items-center gap-2">
 
                     <button
-                      onClick={()=>updateStock(p.id,-1)}
+                      onClick={() => updateStock(p.id, -1)}
                       className="w-8 h-8 bg-red-500 text-white rounded"
                     >-</button>
 
-                    <span>{p.stock}</span>
+                    <span className="w-8 text-center font-semibold">{p.stock}</span>
 
                     <button
-                      onClick={()=>updateStock(p.id,1)}
+                      onClick={() => updateStock(p.id, 1)}
                       className="w-8 h-8 bg-green-500 text-white rounded"
                     >+</button>
 
                   </div>
                 </td>
 
-                <td>{p.cgst}%</td>
-                <td>{p.sgst}%</td>
+                <td className="p-3 text-center">{p.cgst}%</td>
+                <td className="p-3 text-center">{p.sgst}%</td>
 
-                <td>
+                <td className="p-3 text-center">
                   <button
-                    onClick={()=>deleteProduct(p.id)}
-                    className="bg-black text-white px-3 py-1 rounded"
+                    onClick={() => deleteProduct(p.id)}
+                    className="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded text-xs transition"
                   >
                     Delete
                   </button>
@@ -240,6 +244,12 @@ export default function Products(){
           </tbody>
 
         </table>
+
+        {products.length === 0 && (
+          <div className="p-8 text-center text-slate-400">
+            No products found
+          </div>
+        )}
 
       </div>
 
