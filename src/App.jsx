@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
 import MainLayout from "./layout/MainLayout";
+import Admin from "./pages/Admin";
 
 export default function App() {
 
@@ -22,6 +23,12 @@ export default function App() {
         <Route
           path="/signup"
           element={isLoggedIn ? <Navigate to="/dashboard" /> : <Signup goLogin={() => window.location.href = "/"} />}
+        />
+
+        {/* ⭐ ADMIN PANEL - No auth required, uses secret instead */}
+        <Route
+          path="/admin"
+          element={<Admin />}
         />
 
         <Route
