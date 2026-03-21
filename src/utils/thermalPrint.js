@@ -6,24 +6,42 @@ export const printThermal = (sale, width = "80mm") => {
     const pageWidth = width === "58mm" ? "58mm" : "80mm";
     const fontSize = width === "58mm" ? "10px" : "12px";
   
+    // ⭐ CALCULATE TOTAL GST (outside HTML)
+    const totalCgst = (sale.items || []).reduce((s, i) => {
+      return s + (Number(i.price) * Number(i.qty) * Number(i.cgst) / 100);
+    }, 0);
+  
+    const totalSgst = (sale.items || []).reduce((s, i) => {
+      return s + (Number(i.price) * Number(i.qty) * Number(i.sgst) / 100);
+    }, 0);
+  
     const rows = (sale.items || []).map(i => {
-      const taxable = i.price * i.qty;
-      const cgst = taxable * i.cgst / 100;
-      const sgst = taxable * i.sgst / 100;
+      const taxable = Number(i.price) * Number(i.qty);
+      const cgst = taxable * Number(i.cgst) / 100;
+      const sgst = taxable * Number(i.sgst) / 100;
       const total = taxable + cgst + sgst;
   
       return `
         <tr>
-          <td colspan="2">${i.productName}</td>
+          <td colspan="2"><b>${i.productName}</b></td>
         </tr>
         <tr>
-          <td>${i.qty} x ₹${i.price} 
-            <span style="font-size:9px">
-              (C:${i.cgst}% S:${i.sgst}%)
-            </span>
-          </td>
-          <td style="text-align:right">₹${total.toFixed(2)}</td>
+          <td>${i.qty} x ₹${i.price}</td>
+          <td style="text-align:right">₹${taxable.toFixed(2)}</td>
         </tr>
+        <tr>
+          <td style="font-size:9px">CGST ${i.cgst}%</td>
+          <td style="text-align:right; font-size:9px">₹${cgst.toFixed(2)}</td>
+        </tr>
+        <tr>
+          <td style="font-size:9px">SGST ${i.sgst}%</td>
+          <td style="text-align:right; font-size:9px">₹${sgst.toFixed(2)}</td>
+        </tr>
+        <tr>
+          <td><b>Item Total</b></td>
+          <td style="text-align:right"><b>₹${total.toFixed(2)}</b></td>
+        </tr>
+        <tr><td colspan="2"><hr style="border:none;border-top:1px dashed #ccc"/></td></tr>
       `;
     }).join("");
   
@@ -146,6 +164,14 @@ export const printThermal = (sale, width = "80mm") => {
         <tr>
           <td>Sub Total</td>
           <td style="text-align:right">₹${Number(sale.subTotal).toFixed(2)}</td>
+        </tr>
+        <tr>
+          <td style="font-size:9px">CGST</td>
+          <td style="text-align:right; font-size:9px">₹${totalCgst.toFixed(2)}</td>
+        </tr>
+        <tr>
+          <td style="font-size:9px">SGST</td>
+          <td style="text-align:right; font-size:9px">₹${totalSgst.toFixed(2)}</td>
         </tr>
         <tr>
           <td>Round Off</td>
