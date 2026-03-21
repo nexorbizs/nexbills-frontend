@@ -9,6 +9,8 @@ import Customers from "../pages/Customers";
 import Sales from "../pages/Sales";
 import Reports from "../pages/Reports";
 import Settings from "../pages/Settings";
+import Suppliers from "../pages/Suppliers";
+import Purchases from "../pages/Purchases";
 
 export default function MainLayout() {
 
@@ -24,6 +26,8 @@ export default function MainLayout() {
       case "sales": return <Sales />;
       case "reports": return <Reports />;
       case "settings": return <Settings />;
+      case "suppliers": return <Suppliers />;
+      case "purchases": return <Purchases />;
       default: return <Dashboard />;
     }
   };
@@ -68,7 +72,6 @@ export default function MainLayout() {
               <h1 className="text-lg md:text-xl font-bold text-slate-800">
                 NexBills
               </h1>
-
               <p className="text-[10px] md:text-xs text-slate-400">
                 powered by NexorBizs Technologies
               </p>

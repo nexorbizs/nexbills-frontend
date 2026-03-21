@@ -8,7 +8,9 @@ import {
   BarChart3,
   Settings,
   LogOut,
-  X
+  X,
+  Truck,
+  ShoppingBag
 } from "lucide-react";
 
 import { useCartStore } from "../store/cartStore";
@@ -39,6 +41,8 @@ export default function Sidebar({ setPage, sidebarOpen, setSidebarOpen }) {
     { name: "Customers", icon: Users, key: "customers" },
     { name: "Sales", icon: Receipt, key: "sales" },
     { name: "Reports", icon: BarChart3, key: "reports" },
+    { name: "Suppliers", icon: Truck, key: "suppliers" },
+    { name: "Purchases", icon: ShoppingBag, key: "purchases" },
     { name: "Settings", icon: Settings, key: "settings" },
   ];
 
@@ -71,23 +75,19 @@ export default function Sidebar({ setPage, sidebarOpen, setSidebarOpen }) {
         <div className="p-6 border-b border-slate-800">
 
           <div className="flex items-center gap-3">
-
             <img
               src={logo}
               alt="NexBills"
               className="w-10 h-10 rounded-full bg-white p-1"
             />
-
             <div>
               <h1 className="text-2xl font-bold tracking-tight">
                 {company?.name || "NexBills"}
               </h1>
-
               <p className="text-[10px] text-slate-400">
                 powered by NexorBizs Technologies
               </p>
             </div>
-
           </div>
 
           <div className="mt-4 text-sm text-slate-300 bg-slate-800 px-3 py-2 rounded-lg inline-block">
@@ -119,17 +119,11 @@ export default function Sidebar({ setPage, sidebarOpen, setSidebarOpen }) {
                     : "hover:bg-slate-800 text-slate-300"
                   }`}
               >
-
                 {isActive && (
                   <div className="absolute left-0 top-0 h-full w-1 bg-white rounded-r" />
                 )}
-
                 <Icon size={20} />
-
-                <span className="font-medium">
-                  {item.name}
-                </span>
-
+                <span className="font-medium">{item.name}</span>
               </button>
             );
           })}
@@ -138,7 +132,6 @@ export default function Sidebar({ setPage, sidebarOpen, setSidebarOpen }) {
 
         {/* LOGOUT */}
         <div className="p-6 border-t border-slate-800">
-
           <button
             onClick={handleLogout}
             className="w-full flex items-center justify-center gap-2 bg-red-500 hover:bg-red-600 py-3 rounded-xl font-semibold transition"
@@ -146,7 +139,6 @@ export default function Sidebar({ setPage, sidebarOpen, setSidebarOpen }) {
             <LogOut size={18} />
             Logout
           </button>
-
         </div>
 
       </div>
