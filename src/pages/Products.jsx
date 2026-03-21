@@ -90,14 +90,14 @@ export default function Products(){
 
   const updateStock = async (id, change) => {
     try {
-
-      // ⭐ PREVENT NEGATIVE STOCK
+  
+      // ⭐ ONLY BLOCK IF GOING FURTHER BELOW 0
       const product = products.find(p => p.id === id);
-      if (product && product.stock + change < 0)
+      if (product && change < 0 && product.stock <= 0)
         return alert("Stock cannot go below 0");
-
+  
       await API.put(`/products/stock/${id}`, { change });
-
+  
       setProducts(prev =>
         prev.map(p =>
           p.id === id
@@ -105,7 +105,7 @@ export default function Products(){
             : p
         )
       );
-
+  
     } catch (err) {
       alert(err.response?.data?.error || "Stock update failed");
     }
