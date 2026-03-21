@@ -153,6 +153,11 @@ export default function Billing(){
     if(cart.length === 0) return alert("Cart empty");
     if(!customerName.trim()) return alert("Customer required");
   
+    // ⭐ ASK WIDTH FIRST (before async call)
+    const width = window.confirm(
+      "Click OK for 80mm\nClick Cancel for 58mm"
+    ) ? "80mm" : "58mm";
+  
     try {
   
       setLoading(true);
@@ -171,23 +176,14 @@ export default function Billing(){
         }))
       });
   
-      const invoiceNo = res.data.sale.invoiceNo;
+      const saleData = {
+        ...res.data.sale,
+        company: JSON.parse(localStorage.getItem("company") || "{}")
+      };
   
-      const saleId = res.data.sale.id;
-
-// inside createBill, after getting sale data:
-const saleData = {
-  ...res.data.sale,
-  company: JSON.parse(localStorage.getItem("company") || "{}")
-};
-
-const width = window.confirm(
-  "Click OK for 80mm\nClick Cancel for 58mm"
-) ? "80mm" : "58mm";
-
-printThermal(saleData, width);
-
-alert("Invoice Created: " + res.data.sale.invoiceNo);
+      printThermal(saleData, width);
+  
+      alert("Invoice Created: " + res.data.sale.invoiceNo);
   
       clearCart();
       setCustomerName("");
@@ -196,14 +192,10 @@ alert("Invoice Created: " + res.data.sale.invoiceNo);
       loadProducts();
   
     } catch (err) {
-  
       console.log(err.response);
       alert(err.response?.data?.message || "Billing failed");
-  
     } finally {
-  
       setLoading(false);
-  
     }
   };
 
