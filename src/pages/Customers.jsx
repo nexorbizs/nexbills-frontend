@@ -72,13 +72,19 @@ export default function Customers() {
 
     if (!form.name.trim())
       return alert("Customer name required");
-
-    if (!/^[6-9][0-9]{9}$/.test(form.phone))
+  
+    if (form.phone.length < 6 || form.phone.length > 15)
       return alert("Invalid mobile number");
-
+  
     if (form.address.trim().length < 3)
       return alert("Invalid address");
-
+  
+    // ⭐ DUPLICATE CHECK
+    const fullPhone = form.code + " " + form.phone;
+    const duplicate = customers.find(c => c.phone === fullPhone);
+    if (duplicate)
+      return alert(`Phone number already exists for customer: ${duplicate.name}`);
+  
     return true;
   };
 

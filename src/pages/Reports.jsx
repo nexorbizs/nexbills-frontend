@@ -21,51 +21,35 @@ export default function Reports() {
   }, []);
 
   const loadSummary = async () => {
-
     try {
-
       const res = await API.get("/reports/dashboard");
-
       setSummary(res.data);
-
     } catch {
-
       alert("Report summary load failed");
-
     } finally {
-
       setLoading(false);
-
     }
-
   };
 
   /* ================= DATE RANGE ================= */
 
   const getRange = (days) => {
-
     const to = new Date();
     const from = new Date();
-
     from.setDate(from.getDate() - days);
-
     return {
       from: from.toISOString(),
       to: to.toISOString()
     };
-
   };
 
   /* ================= DOWNLOAD ================= */
 
   const downloadReport = async (days) => {
-
     try {
 
       const { from, to } = getRange(days);
-
       const res = await API.get(`/reports/sales?from=${from}&to=${to}`);
-
       const sales = res.data.sales || [];
 
       if (!sales.length) {
@@ -100,17 +84,59 @@ export default function Reports() {
 
         });
 
+        // ⭐ GRAND TOTAL ROW PER INVOICE
         rows.push({
           Invoice: inv.invoiceNo,
-          Item: "ROUND OFF",
+          Date: "",
+          Customer: "",
+          Phone: "",
+          Item: "── SUMMARY ──",
+          HSN: "",
+          Qty: "",
+          Rate: "",
+          Taxable: inv.subTotal,
+          CGST: "",
+          SGST: "",
+          Total: ""
+        });
+
+        rows.push({
+          Invoice: inv.invoiceNo,
+          Date: "",
+          Customer: "",
+          Phone: "",
+          Item: "Round Off",
+          HSN: "",
+          Qty: "",
+          Rate: "",
+          Taxable: "",
+          CGST: "",
+          SGST: "",
           Total: inv.roundOff
         });
+
+        rows.push({
+          Invoice: inv.invoiceNo,
+          Date: "",
+          Customer: "",
+          Phone: "",
+          Item: "GRAND TOTAL",
+          HSN: "",
+          Qty: "",
+          Rate: "",
+          Taxable: "",
+          CGST: "",
+          SGST: "",
+          Total: inv.total
+        });
+
+        // ⭐ EMPTY ROW BETWEEN INVOICES
+        rows.push({});
 
       });
 
       const ws = XLSX.utils.json_to_sheet(rows);
       const wb = XLSX.utils.book_new();
-
       XLSX.utils.book_append_sheet(wb, ws, "GST Report");
 
       const buffer = XLSX.write(wb, {
@@ -125,11 +151,8 @@ export default function Reports() {
       saveAs(blob, `GST_Report_${days}_days.xlsx`);
 
     } catch {
-
       alert("Report generation failed");
-
     }
-
   };
 
   /* ================= UI ================= */

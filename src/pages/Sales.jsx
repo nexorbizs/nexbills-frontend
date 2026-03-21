@@ -97,18 +97,43 @@ export default function Sales() {
 
   const viewSale = (sale) => {
 
-    const rows = (sale.items || []).map(i => `
-      <tr>
-        <td>${i.productName || "-"}</td>
-        <td>${i.hsn || "-"}</td>
-        <td>${i.qty || 0}</td>
-        <td>${i.price || 0}</td>
-        <td>${i.cgst || 0}%</td>
-        <td>${i.sgst || 0}%</td>
-        <td>${calcRow(i).toFixed(2)}</td>
-      </tr>
-    `).join("");
-
+    const rows = (sale.items || []).map(i => {
+  
+      const price = Number(i.price) || 0;
+      const qty = Number(i.qty) || 0;
+      const cgst = Number(i.cgst) || 0;
+      const sgst = Number(i.sgst) || 0;
+  
+      const taxable = price * qty;
+      const cgstAmt = taxable * cgst / 100;
+      const sgstAmt = taxable * sgst / 100;
+      const total = taxable + cgstAmt + sgstAmt;
+  
+      return `
+        <tr>
+          <td>${i.productName || "-"}</td>
+          <td>${i.hsn || "-"}</td>
+          <td>${qty}</td>
+          <td>₹ ${price}</td>
+          <td>${cgst}% (₹ ${cgstAmt.toFixed(2)})</td>
+          <td>${sgst}% (₹ ${sgstAmt.toFixed(2)})</td>
+          <td>₹ ${taxable.toFixed(2)}</td>
+          <td>₹ ${total.toFixed(2)}</td>
+        </tr>
+      `;
+    }).join("");
+  
+    // ⭐ CALC TOTAL GST
+    const totalCgst = (sale.items || []).reduce((s, i) => {
+      const taxable = Number(i.price) * Number(i.qty);
+      return s + taxable * Number(i.cgst) / 100;
+    }, 0);
+  
+    const totalSgst = (sale.items || []).reduce((s, i) => {
+      const taxable = Number(i.price) * Number(i.qty);
+      return s + taxable * Number(i.sgst) / 100;
+    }, 0);
+  
     const html = `
       <html>
       <head>
@@ -117,53 +142,52 @@ export default function Sales() {
       h1{text-align:center}
       table{width:100%;border-collapse:collapse;margin-top:20px}
       td,th{border:1px solid #000;padding:8px;text-align:center}
+      .right{text-align:right}
       </style>
       </head>
       <body>
-
+  
       <h1>Invoice Details</h1>
-
+  
       <p><b>Invoice No:</b> ${sale.invoiceNo}</p>
       <p><b>Date:</b> ${new Date(sale.createdAt).toLocaleString()}</p>
       <p><b>Customer:</b> ${sale.customerName}</p>
       <p><b>Phone:</b> ${sale.customerPhone}</p>
-
+  
       <table>
         <tr>
           <th>Item</th>
           <th>HSN</th>
           <th>Qty</th>
           <th>Price</th>
-          <th>CGST%</th>
-          <th>SGST%</th>
+          <th>CGST</th>
+          <th>SGST</th>
+          <th>Taxable</th>
           <th>Total</th>
         </tr>
         ${rows}
       </table>
-
-      <h3 style="text-align:right">
-      Sub Total ₹ ${(sale.subTotal || 0).toFixed(2)}
-      </h3>
-
-      <h3 style="text-align:right">
-      Round Off ₹ ${(sale.roundOff || 0).toFixed(2)}
-      </h3>
-
-      <h2 style="text-align:right">
-      Grand Total ₹ ${Number(sale.total).toLocaleString("en-IN")}
-      </h2>
-
+  
+      <br/>
+      <table style="width:300px;margin-left:auto">
+        <tr><td>Sub Total</td><td>₹ ${(sale.subTotal || 0).toFixed(2)}</td></tr>
+        <tr><td>Total CGST</td><td>₹ ${totalCgst.toFixed(2)}</td></tr>
+        <tr><td>Total SGST</td><td>₹ ${totalSgst.toFixed(2)}</td></tr>
+        <tr><td>Round Off</td><td>₹ ${(sale.roundOff || 0).toFixed(2)}</td></tr>
+        <tr><td><b>Grand Total</b></td><td><b>₹ ${Number(sale.total).toLocaleString("en-IN")}</b></td></tr>
+      </table>
+  
       </body>
       </html>
     `;
-
+  
     const win = window.open("", "", "width=900,height=700");
-
+  
     if (!win) {
       alert("Popup blocked");
       return;
     }
-
+  
     win.document.write(html);
     win.document.close();
   };
