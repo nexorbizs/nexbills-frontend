@@ -34,62 +34,67 @@ export default function Products(){
   useEffect(() => {
 
     const handleKey = (e) => {
-  
+
       if (!products.length) return;
-  
+
       const current = products[activeIndex];
-  
+
       // ⭐ CHANGE ROW
       if (e.key === "ArrowRight") {
         e.preventDefault();
         setActiveIndex(i => i < products.length - 1 ? i + 1 : 0);
         return;
       }
-  
+
       if (e.key === "ArrowLeft") {
         e.preventDefault();
         setActiveIndex(i => i > 0 ? i - 1 : products.length - 1);
         return;
       }
-  
+
       // ⭐ STOCK CONTROL
       if (e.key === "ArrowUp") {
         e.preventDefault();
         updateStock(current.id, 1);
         return;
       }
-  
+
       if (e.key === "ArrowDown") {
         e.preventDefault();
         updateStock(current.id, -1);
         return;
       }
-  
+
       // ⭐ ADD PRODUCT (ENTER)
       if (e.key === "Enter") {
         e.preventDefault();
         handleAdd();
         return;
       }
-  
+
       // ⭐ DELETE
       if (e.key === "Delete") {
         e.preventDefault();
         deleteProduct(current.id);
         return;
       }
-  
+
     };
-  
+
     window.addEventListener("keydown", handleKey);
     return () => window.removeEventListener("keydown", handleKey);
-  
+
   }, [products, activeIndex, form]);
 
-  /* ================= STOCK UPDATE (NO RELOAD) ================= */
+  /* ================= STOCK UPDATE ================= */
 
   const updateStock = async (id, change) => {
     try {
+
+      // ⭐ PREVENT NEGATIVE STOCK
+      const product = products.find(p => p.id === id);
+      if (product && product.stock + change < 0)
+        return alert("Stock cannot go below 0");
 
       await API.put(`/products/stock/${id}`, { change });
 
@@ -101,23 +106,27 @@ export default function Products(){
         )
       );
 
-    } catch {
-      alert("Stock update failed");
+    } catch (err) {
+      alert(err.response?.data?.error || "Stock update failed");
     }
   };
+
+  /* ================= DELETE ================= */
 
   const deleteProduct = async (id) => {
     try {
       await API.delete(`/products/${id}`);
       setProducts(prev => prev.filter(p => p.id !== id));
-    } catch {
-      alert("Delete failed");
+    } catch (err) {
+      alert(err.response?.data?.error || "Delete failed");
     }
   };
 
+  /* ================= ADD ================= */
+
   const handleAdd = async () => {
 
-    if(!form.name.trim()) return alert("Product name required");
+    if (!form.name.trim()) return alert("Product name required");
 
     try {
 
@@ -141,8 +150,8 @@ export default function Products(){
         sgst: ""
       });
 
-    } catch {
-      alert("Add product failed");
+    } catch (err) {
+      alert(err.response?.data?.error || "Add product failed");
     }
   };
 
@@ -152,7 +161,6 @@ export default function Products(){
       <h1 className="text-2xl md:text-3xl font-bold mb-6">Product Inventory</h1>
 
       {/* ADD FORM */}
-
       <div className="bg-white p-4 md:p-6 rounded-xl shadow mb-6">
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-8 gap-3">
 
@@ -177,7 +185,6 @@ export default function Products(){
       </div>
 
       {/* TABLE */}
-
       <div className="bg-white rounded-xl shadow overflow-x-auto">
 
         <table className="w-full min-w-[700px] text-sm">
