@@ -10,27 +10,26 @@ import {
   LogOut,
   X,
   Truck,
-  ShoppingBag
+  ShoppingBag,
+  Crown
 } from "lucide-react";
 
 import { useCartStore } from "../store/cartStore";
-import { useProductStore } from "../store/productStore";
 import { useState } from "react";
 
 export default function Sidebar({ setPage, sidebarOpen, setSidebarOpen }) {
 
-  const company =
-    JSON.parse(localStorage.getItem("company")||"{}");
+  const company = JSON.parse(localStorage.getItem("company") || "{}");
+  const subscription = JSON.parse(localStorage.getItem("subscription") || "null");
 
   const { clearCart } = useCartStore();
-  const { loadProducts } = useProductStore();
-
   const [active, setActive] = useState("dashboard");
 
   const handleLogout = () => {
     clearCart();
     localStorage.removeItem("token");
     localStorage.removeItem("company");
+    localStorage.removeItem("subscription");
     window.location.href = "/";
   };
 
@@ -45,6 +44,16 @@ export default function Sidebar({ setPage, sidebarOpen, setSidebarOpen }) {
     { name: "Purchases", icon: ShoppingBag, key: "purchases" },
     { name: "Settings", icon: Settings, key: "settings" },
   ];
+
+  // ⭐ SUBSCRIPTION BADGE COLOR
+  const planColors = {
+    trial: "bg-yellow-500/20 text-yellow-300 border-yellow-500/30",
+    basic: "bg-blue-500/20 text-blue-300 border-blue-500/30",
+    pro: "bg-purple-500/20 text-purple-300 border-purple-500/30",
+    enterprise: "bg-green-500/20 text-green-300 border-green-500/30"
+  };
+
+  const planColor = planColors[subscription?.plan] || planColors.trial;
 
   return (
     <>
@@ -94,13 +103,32 @@ export default function Sidebar({ setPage, sidebarOpen, setSidebarOpen }) {
             {company?.name}
           </div>
 
+          {/* ⭐ SUBSCRIPTION BADGE */}
+          {subscription && (
+            <div className={`mt-3 flex items-center gap-2 px-3 py-2 rounded-lg border text-xs font-semibold ${planColor}`}>
+              <Crown size={12} />
+              <span>{subscription.plan?.toUpperCase()} PLAN</span>
+              <span className="ml-auto">
+                {subscription.daysLeft > 0
+                  ? `${subscription.daysLeft}d left`
+                  : "Expired"
+                }
+              </span>
+            </div>
+          )}
+
+          {/* ⭐ EXPIRY WARNING */}
+          {subscription?.daysLeft <= 7 && subscription?.daysLeft > 0 && (
+            <div className="mt-2 bg-red-500/20 border border-red-500/30 rounded-lg px-3 py-2 text-xs text-red-300">
+              ⚠️ Subscription expiring soon! Contact support.
+            </div>
+          )}
+
         </div>
 
         {/* MENU */}
         <div className="flex-1 px-4 py-6 space-y-2 overflow-y-auto">
-
           {menu.map(item => {
-
             const Icon = item.icon;
             const isActive = active === item.key;
 
@@ -113,8 +141,7 @@ export default function Sidebar({ setPage, sidebarOpen, setSidebarOpen }) {
                   setSidebarOpen(false);
                 }}
                 className={`relative w-full flex items-center gap-4 px-5 py-3 rounded-xl text-left transition-all duration-200
-                  ${
-                    isActive
+                  ${isActive
                     ? "bg-gradient-to-r from-blue-600 to-indigo-600 shadow-lg"
                     : "hover:bg-slate-800 text-slate-300"
                   }`}
@@ -127,7 +154,6 @@ export default function Sidebar({ setPage, sidebarOpen, setSidebarOpen }) {
               </button>
             );
           })}
-
         </div>
 
         {/* LOGOUT */}

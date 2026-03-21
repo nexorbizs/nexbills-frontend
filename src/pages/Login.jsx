@@ -2,29 +2,20 @@ import { useState } from "react";
 import logo from "../assets/NexBills Logo.png";
 import API from "../api";
 
-export default function Login({ setIsLoggedIn, goSignup }) {
+export default function Login({ setIsLoggedIn }) {
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-
   const [loading, setLoading] = useState(false);
+  const [subError, setSubError] = useState(null);
 
   /* ================= VALIDATION ================= */
 
   const validate = () => {
-
-    if (!email.trim())
-      return alert("Email required");
-
-    if (!/^\S+@\S+\.\S+$/.test(email))
-      return alert("Invalid email");
-
-    if (!password)
-      return alert("Password required");
-
-    if (password.length < 6)
-      return alert("Password must be minimum 6 characters");
-
+    if (!email.trim()) return alert("Email required");
+    if (!/^\S+@\S+\.\S+$/.test(email)) return alert("Invalid email");
+    if (!password) return alert("Password required");
+    if (password.length < 6) return alert("Password must be minimum 6 characters");
     return true;
   };
 
@@ -33,10 +24,10 @@ export default function Login({ setIsLoggedIn, goSignup }) {
   const handleLogin = async () => {
 
     if (loading) return;
-
     if (!validate()) return;
 
     setLoading(true);
+    setSubError(null);
 
     try {
 
@@ -45,18 +36,28 @@ export default function Login({ setIsLoggedIn, goSignup }) {
         password
       });
 
-      const { token, company } = res.data;
+      const { token, company, subscription } = res.data;
 
-      /* ⭐ STORE SESSION */
+      // ⭐ STORE SESSION
       localStorage.setItem("token", token);
       localStorage.setItem("company", JSON.stringify(company));
+      localStorage.setItem("subscription", JSON.stringify(subscription));
 
-      /* ⭐ LOGIN SUCCESS */
+      // ⭐ WARN IF EXPIRING SOON
+      if (subscription?.daysLeft <= 7) {
+        alert(`⚠️ Your subscription expires in ${subscription.daysLeft} day(s)! Please renew soon.`);
+      }
+
       setIsLoggedIn(true);
 
     } catch (err) {
 
-      alert(err.response?.data?.message || "Login Failed");
+      // ⭐ SUBSCRIPTION EXPIRED/SUSPENDED
+      if (err.response?.data?.subscriptionExpired) {
+        setSubError(err.response.data.message);
+      } else {
+        alert(err.response?.data?.message || "Login Failed");
+      }
 
       setLoading(false);
     }
@@ -65,9 +66,7 @@ export default function Login({ setIsLoggedIn, goSignup }) {
   /* ================= ENTER KEY ================= */
 
   const handleKeyDown = (e) => {
-    if (e.key === "Enter") {
-      handleLogin();
-    }
+    if (e.key === "Enter") handleLogin();
   };
 
   return (
@@ -100,18 +99,25 @@ export default function Login({ setIsLoggedIn, goSignup }) {
         <div className="mb-8 flex items-center justify-center gap-3">
           <img src={logo} className="w-14 h-14 bg-white rounded-full p-1" />
           <div>
-            <h1 className="text-2xl md:text-3xl font-bold">
-              NexBills
-            </h1>
-            <p className="text-xs text-slate-300">
-              powered by NexorBizs Technologies
-            </p>
+            <h1 className="text-2xl md:text-3xl font-bold">NexBills</h1>
+            <p className="text-xs text-slate-300">powered by NexorBizs Technologies</p>
           </div>
         </div>
 
         <h2 className="text-lg md:text-xl font-semibold mb-6 text-center">
           Client Login
         </h2>
+
+        {/* ⭐ SUBSCRIPTION ERROR */}
+        {subError && (
+          <div className="bg-red-500/20 border border-red-500/50 rounded-xl p-4 mb-4 text-center">
+            <p className="text-red-300 text-sm font-semibold">🚫 Access Blocked</p>
+            <p className="text-red-200 text-sm mt-1">{subError}</p>
+            <p className="text-red-300 text-xs mt-2">
+              Contact: support@nexorbizs.com
+            </p>
+          </div>
+        )}
 
         <input
           placeholder="Client Email"
@@ -138,8 +144,6 @@ export default function Login({ setIsLoggedIn, goSignup }) {
         >
           {loading ? "Logging in..." : "Login to NexBills"}
         </button>
-
-        
 
       </div>
     </div>
