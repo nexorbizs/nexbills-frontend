@@ -22,46 +22,50 @@ export default function Login({ setIsLoggedIn }) {
   /* ================= LOGIN ================= */
 
   const handleLogin = async () => {
-
     if (loading) return;
     if (!validate()) return;
-
     setLoading(true);
     setSubError(null);
-
+  
     try {
-
-      const res = await API.post("/auth/login", {
-        email: email.trim().toLowerCase(),
-        password
-      });
-
-      const { token, company, subscription } = res.data;
-
-      // ⭐ STORE SESSION
+      // ⭐ TRY OWNER LOGIN FIRST
+      let res;
+      try {
+        res = await API.post("/auth/login", {
+          email: email.trim().toLowerCase(),
+          password
+        });
+      } catch {
+        // ⭐ FALLBACK TO STAFF LOGIN
+        res = await API.post("/users/login", {
+          email: email.trim().toLowerCase(),
+          password
+        });
+      }
+  
+      const { token, company, subscription, user } = res.data;
+  
       localStorage.setItem("token", token);
       localStorage.setItem("company", JSON.stringify(company));
       localStorage.setItem("subscription", JSON.stringify(subscription));
-
-      // ⭐ WARN IF EXPIRING SOON
+      if (user) localStorage.setItem("user", JSON.stringify(user));
+  
       if (subscription?.daysLeft <= 7) {
-        alert(`⚠️ Your subscription expires in ${subscription.daysLeft} day(s)! Please renew soon.`);
+        alert(`⚠️ Subscription expires in ${subscription.daysLeft} day(s)!`);
       }
-
+  
       setIsLoggedIn(true);
-
+  
     } catch (err) {
-
-      // ⭐ SUBSCRIPTION EXPIRED/SUSPENDED
       if (err.response?.data?.subscriptionExpired) {
         setSubError(err.response.data.message);
       } else {
         alert(err.response?.data?.message || "Login Failed");
       }
-
       setLoading(false);
     }
   };
+
 
   /* ================= ENTER KEY ================= */
 
