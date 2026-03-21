@@ -7,7 +7,7 @@ import { printThermal } from "../utils/thermalPrint";
 export default function Billing(){
 
   const { products, loadProducts } = useProductStore();
-  const { cart, addToCart, increaseQty, decreaseQty, clearCart } = useCartStore();
+  const { cart, addToCart, increaseQty, decreaseQty, clearCart, updateDiscount } = useCartStore();
 
   const [search, setSearch] = useState("");
   const [customerSearch, setCustomerSearch] = useState("");
@@ -19,6 +19,10 @@ export default function Billing(){
 
   const [paymentMode, setPaymentMode] = useState("cash");
   const [amountReceived, setAmountReceived] = useState("");
+
+  // ⭐ BILL DISCOUNT
+  const [discountType, setDiscountType] = useState("percent");
+  const [discountValue, setDiscountValue] = useState("");
 
   const [loading, setLoading] = useState(false);
 
@@ -128,16 +132,41 @@ export default function Billing(){
 
   }, [search, filteredProducts, cart, activeProductIndex, activeCartIndex]);
 
-  /* ================= GST CALC ================= */
+  /* ================= GST CALC WITH ITEM DISCOUNT ================= */
 
   const calcRow = (item) => {
-    const taxable = item.price * item.qty;
+    const discount = Number(item.discount || 0);
+    const discountedPrice = item.price * (1 - discount / 100);
+    const taxable = discountedPrice * item.qty;
     const cgstAmt = taxable * item.cgst / 100;
     const sgstAmt = taxable * item.sgst / 100;
     return taxable + cgstAmt + sgstAmt;
   };
 
-  const exactTotal = cart.reduce((s,i)=>s+calcRow(i),0);
+  const subTotal = cart.reduce((s, i) => {
+    const discount = Number(i.discount || 0);
+    const discountedPrice = i.price * (1 - discount / 100);
+    return s + discountedPrice * i.qty;
+  }, 0);
+
+  // ⭐ BILL DISCOUNT CALC
+  const billDiscountAmount = discountType === "percent"
+    ? subTotal * Number(discountValue || 0) / 100
+    : Number(discountValue || 0);
+
+  const discountedSubTotal = subTotal - billDiscountAmount;
+
+  const totalGST = cart.reduce((s, i) => {
+    const discount = Number(i.discount || 0);
+    const discountedPrice = i.price * (1 - discount / 100);
+    const taxable = discountedPrice * i.qty;
+    return s + taxable * (i.cgst + i.sgst) / 100;
+  }, 0);
+
+  const gstMultiplier = subTotal > 0 ? discountedSubTotal / subTotal : 1;
+  const adjustedGST = totalGST * gstMultiplier;
+
+  const exactTotal = discountedSubTotal + adjustedGST;
   const roundedTotal = Math.round(exactTotal);
   const roundOff = roundedTotal - exactTotal;
 
@@ -152,16 +181,15 @@ export default function Billing(){
 
     if(cart.length === 0) return alert("Cart empty");
     if(!customerName.trim()) return alert("Customer required");
-  
-    // ⭐ ASK WIDTH FIRST (before async call)
+
     const width = window.confirm(
       "Click OK for 80mm\nClick Cancel for 58mm"
     ) ? "80mm" : "58mm";
-  
+
     try {
-  
+
       setLoading(true);
-  
+
       const res = await API.post("/sales", {
         customerName,
         customerPhone,
@@ -170,27 +198,31 @@ export default function Billing(){
           paymentMode === "upi"
             ? roundedTotal
             : Number(amountReceived || 0),
+        discountType,
+        discountValue: Number(discountValue || 0),
         items: cart.map(i => ({
           productId: i.id,
-          qty: i.qty
+          qty: i.qty,
+          discount: Number(i.discount || 0)
         }))
       });
-  
+
       const saleData = {
         ...res.data.sale,
         company: JSON.parse(localStorage.getItem("company") || "{}")
       };
-  
+
       printThermal(saleData, width);
-  
+
       alert("Invoice Created: " + res.data.sale.invoiceNo);
-  
+
       clearCart();
       setCustomerName("");
       setCustomerPhone("");
       setAmountReceived("");
+      setDiscountValue("");
       loadProducts();
-  
+
     } catch (err) {
       console.log(err.response);
       alert(err.response?.data?.message || "Billing failed");
@@ -258,6 +290,7 @@ export default function Billing(){
           </div>
         )}
 
+        {/* CART TABLE */}
         <div className="bg-white rounded-2xl shadow-lg overflow-x-auto">
 
           {cart.length === 0
@@ -265,12 +298,13 @@ export default function Billing(){
                 No items in cart
               </div>
             :
-          <table className="min-w-[600px] w-full text-sm">
+          <table className="min-w-[650px] w-full text-sm">
             <thead className="bg-slate-100">
               <tr>
                 <th className="p-4 text-left">Item</th>
                 <th className="p-4 text-center">Qty</th>
                 <th className="p-4 text-right">Price</th>
+                <th className="p-4 text-center">Disc%</th>
                 <th className="p-4 text-right">Total</th>
               </tr>
             </thead>
@@ -279,7 +313,14 @@ export default function Billing(){
               {cart.map(item=>(
                 <tr key={item.id} className="border-t">
 
-                  <td className="p-4">{item.name}</td>
+                  <td className="p-4">
+                    {item.name}
+                    {Number(item.discount || 0) > 0 && (
+                      <span className="ml-2 text-xs text-green-600 font-semibold">
+                        -{item.discount}%
+                      </span>
+                    )}
+                  </td>
 
                   <td className="p-4 text-center">
                     <div className="flex justify-center gap-2">
@@ -287,9 +328,7 @@ export default function Billing(){
                         onClick={()=>decreaseQty(item.id)}
                         className="bg-red-500 text-white w-7 h-7 rounded"
                       >-</button>
-
                       <span>{item.qty}</span>
-
                       <button
                         onClick={()=>increaseQty(item.id)}
                         className="bg-green-500 text-white w-7 h-7 rounded"
@@ -297,7 +336,27 @@ export default function Billing(){
                     </div>
                   </td>
 
-                  <td className="p-4 text-right">₹ {item.price}</td>
+                  <td className="p-4 text-right">
+                    ₹ {item.price}
+                    {Number(item.discount || 0) > 0 && (
+                      <div className="text-xs text-green-600">
+                        ₹ {(item.price * (1 - Number(item.discount) / 100)).toFixed(2)}
+                      </div>
+                    )}
+                  </td>
+
+                  {/* ⭐ ITEM DISCOUNT INPUT */}
+                  <td className="p-4 text-center">
+                    <input
+                      type="number"
+                      min="0"
+                      max="100"
+                      value={item.discount || ""}
+                      placeholder="0"
+                      onChange={e => updateDiscount(item.id, Number(e.target.value || 0))}
+                      className="border rounded p-1 w-16 text-center text-sm"
+                    />
+                  </td>
 
                   <td className="p-4 text-right font-semibold">
                     ₹ {calcRow(item).toFixed(2)}
@@ -320,10 +379,38 @@ export default function Billing(){
           <h2 className="text-2xl font-bold mb-6">Summary</h2>
 
           <div className="space-y-3 mb-6">
+
             <div className="flex justify-between text-lg">
               <span>Sub Total</span>
-              <span>₹ {exactTotal.toFixed(2)}</span>
+              <span>₹ {subTotal.toFixed(2)}</span>
             </div>
+
+            {/* ⭐ BILL DISCOUNT */}
+            <div className="flex gap-2 items-center">
+              <select
+                value={discountType}
+                onChange={e => setDiscountType(e.target.value)}
+                className="border p-2 rounded-lg text-sm"
+              >
+                <option value="percent">Discount %</option>
+                <option value="flat">Flat ₹</option>
+              </select>
+              <input
+                type="number"
+                min="0"
+                placeholder="0"
+                value={discountValue}
+                onChange={e => setDiscountValue(e.target.value)}
+                className="border p-2 rounded-lg text-sm w-full"
+              />
+            </div>
+
+            {billDiscountAmount > 0 && (
+              <div className="flex justify-between text-sm text-green-600">
+                <span>Discount</span>
+                <span>- ₹ {billDiscountAmount.toFixed(2)}</span>
+              </div>
+            )}
 
             <div className="flex justify-between text-lg text-orange-500">
               <span>Round Off</span>
@@ -334,6 +421,7 @@ export default function Billing(){
               <span>Total</span>
               <span>₹ {roundedTotal.toFixed(2)}</span>
             </div>
+
           </div>
 
           <select
@@ -353,7 +441,6 @@ export default function Billing(){
                 onChange={e=>setAmountReceived(e.target.value)}
                 className="border p-3 w-full rounded-xl mb-2"
               />
-
               <p className="text-right text-sm text-slate-500">
                 Balance: ₹ {balance >= 0 ? balance : 0}
               </p>

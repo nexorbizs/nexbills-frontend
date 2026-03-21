@@ -66,6 +66,7 @@ export const useCartStore = create((set, get) => ({
           price: Number(product.price) || 0,
           cgst: Number(product.cgst) || 0,
           sgst: Number(product.sgst) || 0,
+          discount: Number(product.discount || 0), // ⭐ PRE-FILL DISCOUNT
           qty: 1
         }
       ];
@@ -101,6 +102,15 @@ export const useCartStore = create((set, get) => ({
 
     get().saveCart(updated);
 
+  },
+
+  /* ================= UPDATE DISCOUNT ================= */
+
+  updateDiscount: (id, discount) => {
+    const updated = get().cart.map(i =>
+      i.id === id ? { ...i, discount } : i
+    );
+    get().saveCart(updated);
   },
 
   /* ================= CLEAR ================= */

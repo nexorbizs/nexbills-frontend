@@ -13,7 +13,8 @@ export default function Products(){
     price: "",
     stock: "",
     cgst: "",
-    sgst: ""
+    sgst: "",
+    discount: ""
   });
 
   useEffect(() => {
@@ -39,7 +40,6 @@ export default function Products(){
 
       const current = products[activeIndex];
 
-      // ⭐ CHANGE ROW
       if (e.key === "ArrowRight") {
         e.preventDefault();
         setActiveIndex(i => i < products.length - 1 ? i + 1 : 0);
@@ -52,7 +52,6 @@ export default function Products(){
         return;
       }
 
-      // ⭐ STOCK CONTROL
       if (e.key === "ArrowUp") {
         e.preventDefault();
         updateStock(current.id, 1);
@@ -65,14 +64,12 @@ export default function Products(){
         return;
       }
 
-      // ⭐ ADD PRODUCT (ENTER)
       if (e.key === "Enter") {
         e.preventDefault();
         handleAdd();
         return;
       }
 
-      // ⭐ DELETE
       if (e.key === "Delete") {
         e.preventDefault();
         deleteProduct(current.id);
@@ -90,14 +87,12 @@ export default function Products(){
 
   const updateStock = async (id, change) => {
     try {
-  
-      // ⭐ ONLY BLOCK IF GOING FURTHER BELOW 0
       const product = products.find(p => p.id === id);
       if (product && change < 0 && product.stock <= 0)
         return alert("Stock cannot go below 0");
-  
+
       await API.put(`/products/stock/${id}`, { change });
-  
+
       setProducts(prev =>
         prev.map(p =>
           p.id === id
@@ -105,7 +100,7 @@ export default function Products(){
             : p
         )
       );
-  
+
     } catch (err) {
       alert(err.response?.data?.error || "Stock update failed");
     }
@@ -128,6 +123,10 @@ export default function Products(){
 
     if (!form.name.trim()) return alert("Product name required");
 
+    const discount = Number(form.discount || 0);
+    if (discount < 0 || discount > 100)
+      return alert("Discount must be between 0 and 100");
+
     try {
 
       const res = await API.post("/products", {
@@ -135,7 +134,8 @@ export default function Products(){
         price: Number(form.price),
         stock: Number(form.stock),
         cgst: Number(form.cgst || 0),
-        sgst: Number(form.sgst || 0)
+        sgst: Number(form.sgst || 0),
+        discount
       });
 
       setProducts(prev => [res.data, ...prev]);
@@ -147,7 +147,8 @@ export default function Products(){
         price: "",
         stock: "",
         cgst: "",
-        sgst: ""
+        sgst: "",
+        discount: ""
       });
 
     } catch (err) {
@@ -162,12 +163,12 @@ export default function Products(){
 
       {/* ADD FORM */}
       <div className="bg-white p-4 md:p-6 rounded-xl shadow mb-6">
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-8 gap-3">
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-9 gap-3">
 
           {Object.keys(form).map(key => (
             <input
               key={key}
-              placeholder={key.toUpperCase()}
+              placeholder={key === "discount" ? "DISC %" : key.toUpperCase()}
               value={form[key]}
               onChange={e => setForm({ ...form, [key]: e.target.value })}
               className="border p-3 rounded-lg text-sm"
@@ -187,7 +188,7 @@ export default function Products(){
       {/* TABLE */}
       <div className="bg-white rounded-xl shadow overflow-x-auto">
 
-        <table className="w-full min-w-[700px] text-sm">
+        <table className="w-full min-w-[800px] text-sm">
 
           <thead className="bg-slate-100">
             <tr>
@@ -198,6 +199,7 @@ export default function Products(){
               <th className="p-3 text-center">Stock</th>
               <th className="p-3 text-center">CGST</th>
               <th className="p-3 text-center">SGST</th>
+              <th className="p-3 text-center">Disc%</th>
               <th className="p-3 text-center">Action</th>
             </tr>
           </thead>
@@ -217,24 +219,27 @@ export default function Products(){
 
                 <td className="p-3">
                   <div className="flex justify-center items-center gap-2">
-
                     <button
                       onClick={() => updateStock(p.id, -1)}
                       className="w-8 h-8 bg-red-500 text-white rounded"
                     >-</button>
-
                     <span className="w-8 text-center font-semibold">{p.stock}</span>
-
                     <button
                       onClick={() => updateStock(p.id, 1)}
                       className="w-8 h-8 bg-green-500 text-white rounded"
                     >+</button>
-
                   </div>
                 </td>
 
                 <td className="p-3 text-center">{p.cgst}%</td>
                 <td className="p-3 text-center">{p.sgst}%</td>
+
+                <td className="p-3 text-center">
+                  {Number(p.discount || 0) > 0
+                    ? <span className="text-green-600 font-semibold">{p.discount}%</span>
+                    : <span className="text-slate-400">-</span>
+                  }
+                </td>
 
                 <td className="p-3 text-center">
                   <button
