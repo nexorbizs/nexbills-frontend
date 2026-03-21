@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import API from "../api";
 import { useProductStore } from "../store/productStore";
 import { useCartStore } from "../store/cartStore";
+import { printThermal } from "../utils/thermalPrint";
 
 export default function Billing(){
 
@@ -174,13 +175,17 @@ export default function Billing(){
   
       const saleId = res.data.sale.id;
 
-/* ⭐ OPEN PDF */
-const token = localStorage.getItem("token");
+// inside createBill, after getting sale data:
+const saleData = {
+  ...res.data.sale,
+  company: JSON.parse(localStorage.getItem("company") || "{}")
+};
 
-window.open(
- `${import.meta.env.VITE_API_URL}/sales/pdf/${saleId}?token=${token}`,
- "_blank"
-);
+const width = window.confirm(
+  "Click OK for 80mm\nClick Cancel for 58mm"
+) ? "80mm" : "58mm";
+
+printThermal(saleData, width);
 
 alert("Invoice Created: " + res.data.sale.invoiceNo);
   
