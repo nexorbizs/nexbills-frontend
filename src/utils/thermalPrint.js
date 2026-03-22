@@ -14,7 +14,7 @@ export const printThermal = (sale, width = "80mm") => {
 
   // ⭐ UPI QR code URL (uses Google Charts API)
   const upiString = `upi://pay?pa=${upiId}&pn=${encodeURIComponent(company?.name || "")}&am=${sale.total}&cu=INR&tn=${encodeURIComponent("Invoice " + sale.invoiceNo)}`;
-  const qrUrl = `https://chart.googleapis.com/chart?chs=150x150&cht=qr&chl=${encodeURIComponent(upiString)}`;
+  const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(upiString)}`;
 
   // ⭐ Logo URL
   const logoUrl = company?.setting?.logoUrl || "";
