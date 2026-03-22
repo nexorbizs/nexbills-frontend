@@ -9,7 +9,91 @@ export default function Login({ setIsLoggedIn }) {
   const [loading, setLoading] = useState(false);
   const [subError, setSubError] = useState(null);
 
-  /* ================= VALIDATION ================= */
+  // ⭐ FORGOT PASSWORD STATE
+  const [step, setStep] = useState("login"); // "login" | "forgot" | "otp" | "reset"
+  const [forgotEmail, setForgotEmail] = useState("");
+  const [otp, setOtp] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [otpLoading, setOtpLoading] = useState(false);
+  const [resendTimer, setResendTimer] = useState(0);
+
+  /* ================= RESEND TIMER ================= */
+
+  const startResendTimer = () => {
+    setResendTimer(30);
+    const interval = setInterval(() => {
+      setResendTimer(prev => {
+        if (prev <= 1) { clearInterval(interval); return 0; }
+        return prev - 1;
+      });
+    }, 1000);
+  };
+
+  /* ================= SEND OTP ================= */
+
+  const handleSendOtp = async () => {
+    if (!forgotEmail.trim()) return alert("Enter your registered email");
+    if (!/^\S+@\S+\.\S+$/.test(forgotEmail)) return alert("Invalid email");
+    setOtpLoading(true);
+    try {
+      await API.post("/auth/send-otp", { email: forgotEmail.trim().toLowerCase() });
+      alert("OTP sent! Check your email.");
+      setStep("otp");
+      startResendTimer();
+    } catch (err) {
+      alert(err.response?.data?.message || "Failed to send OTP");
+    } finally {
+      setOtpLoading(false);
+    }
+  };
+
+  /* ================= VERIFY OTP ================= */
+
+  const handleVerifyOtp = async () => {
+    if (!otp.trim()) return alert("Enter OTP");
+    if (otp.length !== 6) return alert("OTP must be 6 digits");
+    setOtpLoading(true);
+    try {
+      await API.post("/auth/verify-otp", {
+        email: forgotEmail.trim().toLowerCase(),
+        otp: otp.trim()
+      });
+      setStep("reset");
+    } catch (err) {
+      alert(err.response?.data?.message || "Invalid OTP");
+    } finally {
+      setOtpLoading(false);
+    }
+  };
+
+  /* ================= RESET PASSWORD ================= */
+
+  const handleResetPassword = async () => {
+    if (!newPassword) return alert("Enter new password");
+    if (newPassword.length < 6) return alert("Password must be at least 6 characters");
+    if (newPassword !== confirmPassword) return alert("Passwords do not match");
+    setOtpLoading(true);
+    try {
+      await API.post("/auth/reset-password", {
+        email: forgotEmail.trim().toLowerCase(),
+        otp: otp.trim(),
+        newPassword
+      });
+      alert("Password reset successfully! Please login.");
+      setStep("login");
+      setForgotEmail("");
+      setOtp("");
+      setNewPassword("");
+      setConfirmPassword("");
+    } catch (err) {
+      alert(err.response?.data?.message || "Reset failed");
+    } finally {
+      setOtpLoading(false);
+    }
+  };
+
+  /* ================= LOGIN ================= */
 
   const validate = () => {
     if (!email.trim()) return alert("Email required");
@@ -19,16 +103,13 @@ export default function Login({ setIsLoggedIn }) {
     return true;
   };
 
-  /* ================= LOGIN ================= */
-
   const handleLogin = async () => {
     if (loading) return;
     if (!validate()) return;
     setLoading(true);
     setSubError(null);
-  
+
     try {
-      // ⭐ TRY OWNER LOGIN FIRST
       let res;
       try {
         res = await API.post("/auth/login", {
@@ -36,26 +117,25 @@ export default function Login({ setIsLoggedIn }) {
           password
         });
       } catch {
-        // ⭐ FALLBACK TO STAFF LOGIN
         res = await API.post("/users/login", {
           email: email.trim().toLowerCase(),
           password
         });
       }
-  
+
       const { token, company, subscription, user } = res.data;
-  
+
       localStorage.setItem("token", token);
       localStorage.setItem("company", JSON.stringify(company));
       localStorage.setItem("subscription", JSON.stringify(subscription));
       if (user) localStorage.setItem("user", JSON.stringify(user));
-  
-      if (subscription?.daysLeft <= 7) {
+
+      if (subscription?.daysLeft <= 7 && subscription?.plan !== "lifetime") {
         alert(`⚠️ Subscription expires in ${subscription.daysLeft} day(s)!`);
       }
-  
+
       setIsLoggedIn(true);
-  
+
     } catch (err) {
       if (err.response?.data?.subscriptionExpired) {
         setSubError(err.response.data.message);
@@ -66,22 +146,16 @@ export default function Login({ setIsLoggedIn }) {
     }
   };
 
-
-  /* ================= ENTER KEY ================= */
-
   const handleKeyDown = (e) => {
     if (e.key === "Enter") handleLogin();
   };
 
-  return (
-    <div className="relative min-h-screen flex items-center justify-center overflow-hidden bg-black p-6">
-
-      {/* PARTICLES */}
+  // ⭐ SHARED BACKGROUND
+  const bg = (
+    <>
       <div className="absolute inset-0">
         {[...Array(60)].map((_, i) => (
-          <span
-            key={i}
-            className="absolute bg-white rounded-full opacity-40"
+          <span key={i} className="absolute bg-white rounded-full opacity-40"
             style={{
               width: Math.random() * 3 + 1,
               height: Math.random() * 3 + 1,
@@ -92,34 +166,167 @@ export default function Login({ setIsLoggedIn }) {
           />
         ))}
       </div>
-
-      {/* GLOW */}
       <div className="absolute w-[700px] h-[700px] bg-indigo-500 rounded-full blur-[200px] opacity-20 top-[-200px] left-[-200px]" />
       <div className="absolute w-[600px] h-[600px] bg-purple-500 rounded-full blur-[180px] opacity-20 bottom-[-200px] right-[-200px]" />
+    </>
+  );
 
-      {/* CARD */}
-      <div className="relative z-10 bg-white/10 backdrop-blur-xl border border-white/20 w-full max-w-md p-8 md:p-10 rounded-3xl shadow-2xl text-white">
+  const logoBlock = (
+    <div className="mb-8 flex items-center justify-center gap-3">
+      <img src={logo} className="w-14 h-14 bg-white rounded-full p-1" />
+      <div>
+        <h1 className="text-2xl md:text-3xl font-bold">NexBills</h1>
+        <p className="text-xs text-slate-300">powered by NexorBizs Technologies</p>
+      </div>
+    </div>
+  );
 
-        <div className="mb-8 flex items-center justify-center gap-3">
-          <img src={logo} className="w-14 h-14 bg-white rounded-full p-1" />
-          <div>
-            <h1 className="text-2xl md:text-3xl font-bold">NexBills</h1>
-            <p className="text-xs text-slate-300">powered by NexorBizs Technologies</p>
-          </div>
+  const inputClass = "w-full border border-white/30 bg-white/10 p-3 rounded-xl placeholder-white/60 focus:outline-none focus:ring-2 focus:ring-indigo-500";
+  const btnClass = "w-full bg-indigo-600 hover:bg-indigo-700 text-white p-3 rounded-xl font-semibold transition";
+
+  /* ================= STEP: FORGOT EMAIL ================= */
+
+  if (step === "forgot") {
+    return (
+      <div className="relative min-h-screen flex items-center justify-center overflow-hidden bg-black p-6">
+        {bg}
+        <div className="relative z-10 bg-white/10 backdrop-blur-xl border border-white/20 w-full max-w-md p-8 md:p-10 rounded-3xl shadow-2xl text-white">
+          {logoBlock}
+          <h2 className="text-lg font-semibold mb-2 text-center">Forgot Password</h2>
+          <p className="text-slate-400 text-sm text-center mb-6">Enter your registered email to receive OTP</p>
+
+          <input
+            placeholder="Registered Email"
+            value={forgotEmail}
+            autoFocus
+            onChange={e => setForgotEmail(e.target.value)}
+            onKeyDown={e => e.key === "Enter" && handleSendOtp()}
+            className={`${inputClass} mb-4`}
+          />
+
+          <button onClick={handleSendOtp} disabled={otpLoading} className={`${btnClass} mb-3`}>
+            {otpLoading ? "Sending OTP..." : "Send OTP"}
+          </button>
+
+          <button onClick={() => setStep("login")} className="w-full text-slate-400 hover:text-white text-sm text-center transition">
+            ← Back to Login
+          </button>
         </div>
+      </div>
+    );
+  }
 
-        <h2 className="text-lg md:text-xl font-semibold mb-6 text-center">
-          Client Login
-        </h2>
+  /* ================= STEP: ENTER OTP ================= */
 
-        {/* ⭐ SUBSCRIPTION ERROR */}
+  if (step === "otp") {
+    return (
+      <div className="relative min-h-screen flex items-center justify-center overflow-hidden bg-black p-6">
+        {bg}
+        <div className="relative z-10 bg-white/10 backdrop-blur-xl border border-white/20 w-full max-w-md p-8 md:p-10 rounded-3xl shadow-2xl text-white">
+          {logoBlock}
+          <h2 className="text-lg font-semibold mb-2 text-center">Enter OTP</h2>
+          <p className="text-slate-400 text-sm text-center mb-1">
+            OTP sent to <span className="text-white font-semibold">{forgotEmail}</span>
+          </p>
+          <p className="text-slate-500 text-xs text-center mb-6">Valid for 5 minutes</p>
+
+          <input
+            placeholder="6-digit OTP"
+            value={otp}
+            autoFocus
+            maxLength={6}
+            onChange={e => setOtp(e.target.value.replace(/\D/g, ""))}
+            onKeyDown={e => e.key === "Enter" && handleVerifyOtp()}
+            className={`${inputClass} mb-4 text-center text-2xl font-bold tracking-widest`}
+          />
+
+          <button onClick={handleVerifyOtp} disabled={otpLoading} className={`${btnClass} mb-3`}>
+            {otpLoading ? "Verifying..." : "Verify OTP"}
+          </button>
+
+          {/* Resend OTP */}
+          <div className="text-center mb-3">
+            {resendTimer > 0 ? (
+              <p className="text-slate-400 text-sm">Resend OTP in {resendTimer}s</p>
+            ) : (
+              <button onClick={handleSendOtp} disabled={otpLoading}
+                className="text-indigo-400 hover:text-indigo-300 text-sm underline">
+                Resend OTP
+              </button>
+            )}
+          </div>
+
+          <button onClick={() => setStep("forgot")} className="w-full text-slate-400 hover:text-white text-sm text-center transition">
+            ← Change Email
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  /* ================= STEP: RESET PASSWORD ================= */
+
+  if (step === "reset") {
+    return (
+      <div className="relative min-h-screen flex items-center justify-center overflow-hidden bg-black p-6">
+        {bg}
+        <div className="relative z-10 bg-white/10 backdrop-blur-xl border border-white/20 w-full max-w-md p-8 md:p-10 rounded-3xl shadow-2xl text-white">
+          {logoBlock}
+          <h2 className="text-lg font-semibold mb-2 text-center">Reset Password</h2>
+          <p className="text-slate-400 text-sm text-center mb-6">Enter your new password</p>
+
+          <input
+            type="password"
+            placeholder="New Password"
+            value={newPassword}
+            autoFocus
+            onChange={e => setNewPassword(e.target.value)}
+            className={`${inputClass} mb-4`}
+          />
+
+          <input
+            type="password"
+            placeholder="Confirm New Password"
+            value={confirmPassword}
+            onChange={e => setConfirmPassword(e.target.value)}
+            onKeyDown={e => e.key === "Enter" && handleResetPassword()}
+            className={`${inputClass} mb-6`}
+          />
+
+          {/* Password match indicator */}
+          {confirmPassword && (
+            <p className={`text-xs mb-4 ${newPassword === confirmPassword ? "text-green-400" : "text-red-400"}`}>
+              {newPassword === confirmPassword ? "✅ Passwords match" : "❌ Passwords do not match"}
+            </p>
+          )}
+
+          <button onClick={handleResetPassword} disabled={otpLoading} className={`${btnClass} mb-3`}>
+            {otpLoading ? "Resetting..." : "Reset Password"}
+          </button>
+
+          <button onClick={() => setStep("login")} className="w-full text-slate-400 hover:text-white text-sm text-center transition">
+            ← Back to Login
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  /* ================= STEP: LOGIN ================= */
+
+  return (
+    <div className="relative min-h-screen flex items-center justify-center overflow-hidden bg-black p-6">
+      {bg}
+      <div className="relative z-10 bg-white/10 backdrop-blur-xl border border-white/20 w-full max-w-md p-8 md:p-10 rounded-3xl shadow-2xl text-white">
+        {logoBlock}
+
+        <h2 className="text-lg md:text-xl font-semibold mb-6 text-center">Client Login</h2>
+
         {subError && (
           <div className="bg-red-500/20 border border-red-500/50 rounded-xl p-4 mb-4 text-center">
             <p className="text-red-300 text-sm font-semibold">🚫 Access Blocked</p>
             <p className="text-red-200 text-sm mt-1">{subError}</p>
-            <p className="text-red-300 text-xs mt-2">
-              Contact: support@nexorbizs.com
-            </p>
+            <p className="text-red-300 text-xs mt-2">Contact: support@nexorbizs.com</p>
           </div>
         )}
 
@@ -129,7 +336,7 @@ export default function Login({ setIsLoggedIn }) {
           value={email}
           onChange={e => setEmail(e.target.value)}
           onKeyDown={handleKeyDown}
-          className="w-full border border-white/30 bg-white/10 p-3 rounded-xl mb-4 placeholder-white/60 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+          className={`${inputClass} mb-4`}
         />
 
         <input
@@ -138,17 +345,22 @@ export default function Login({ setIsLoggedIn }) {
           value={password}
           onChange={e => setPassword(e.target.value)}
           onKeyDown={handleKeyDown}
-          className="w-full border border-white/30 bg-white/10 p-3 rounded-xl mb-6 placeholder-white/60 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+          className={`${inputClass} mb-2`}
         />
 
-        <button
-          onClick={handleLogin}
-          disabled={loading}
-          className="w-full bg-indigo-600 hover:bg-indigo-700 text-white p-3 rounded-xl font-semibold transition"
-        >
+        {/* ⭐ FORGOT PASSWORD LINK */}
+        <div className="text-right mb-6">
+          <button
+            onClick={() => { setStep("forgot"); setForgotEmail(email); }}
+            className="text-indigo-300 hover:text-indigo-200 text-sm underline"
+          >
+            Forgot Password?
+          </button>
+        </div>
+
+        <button onClick={handleLogin} disabled={loading} className={btnClass}>
           {loading ? "Logging in..." : "Login to NexBills"}
         </button>
-
       </div>
     </div>
   );
