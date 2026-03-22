@@ -33,6 +33,17 @@ export default function Admin() {
     }
   };
 
+  /* ================= LOAD COMPANIES ================= */
+
+  const loadCompanies = async () => {
+    try {
+      const res = await API.get(`/subscriptions/companies?secret=${secret}`);
+      setCompanies(res.data);
+    } catch {
+      alert("Failed to load companies");
+    }
+  };
+
   /* ================= SET SUBSCRIPTION ================= */
 
   const setSubscription = async () => {
@@ -59,18 +70,33 @@ export default function Admin() {
     }
   };
 
-  /* ================= RELOAD COMPANIES ================= */
+  /* ================= UNSUSPEND ================= */ // ⭐ NEW
 
-  const loadCompanies = async () => {
+  const unsuspendCompany = async (companyId) => {
+    if (!window.confirm("Reactivate this company?")) return;
     try {
-      const res = await API.get(`/subscriptions/companies?secret=${secret}`);
-      setCompanies(res.data);
-    } catch {
-      alert("Failed to load companies");
+      await API.post("/subscriptions/unsuspend", { companyId, secret });
+      alert("Reactivated!");
+      loadCompanies();
+    } catch (err) {
+      alert(err.response?.data?.error || "Failed");
     }
   };
 
-  /* ================= STATUS COLOR ================= */
+  /* ================= EXTEND ================= */ // ⭐ NEW
+
+  const extendDays = async (companyId, days) => {
+    if (!window.confirm(`Extend by ${days} days?`)) return;
+    try {
+      await API.post("/subscriptions/extend", { companyId, days, secret });
+      alert(`Extended by ${days} days!`);
+      loadCompanies();
+    } catch (err) {
+      alert(err.response?.data?.error || "Failed");
+    }
+  };
+
+  /* ================= HELPERS ================= */
 
   const statusColor = (status) => {
     if (status === "active") return "text-green-600";
@@ -86,6 +112,14 @@ export default function Admin() {
     return "bg-yellow-100 text-yellow-700";
   };
 
+  // ⭐ Row highlight for expiring soon
+  const rowBg = (c) => {
+    if (c.subscription?.status === "suspended") return "bg-orange-50";
+    if (c.daysLeft !== null && c.daysLeft <= 7 && c.daysLeft > 0) return "bg-red-50";
+    if (c.daysLeft !== null && c.daysLeft <= 0) return "bg-red-100";
+    return "";
+  };
+
   /* ================= SECRET SCREEN ================= */
 
   if (!authorized) {
@@ -93,9 +127,7 @@ export default function Admin() {
       <div className="min-h-screen bg-slate-950 flex items-center justify-center p-6">
         <div className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-3xl p-8 w-full max-w-md text-white">
           <h1 className="text-2xl font-bold text-center mb-2">NexBills Admin</h1>
-          <p className="text-slate-400 text-sm text-center mb-6">
-            NexorBizs Technologies
-          </p>
+          <p className="text-slate-400 text-sm text-center mb-6">NexorBizs Technologies</p>
           <input
             type="password"
             placeholder="Admin Secret"
@@ -105,11 +137,8 @@ export default function Admin() {
             className="border border-white/30 bg-white/10 p-3 w-full mb-4 rounded-xl text-white placeholder-white/50"
             autoFocus
           />
-          <button
-            onClick={verify}
-            disabled={loading}
-            className="bg-indigo-600 hover:bg-indigo-700 text-white w-full p-3 rounded-xl font-semibold"
-          >
+          <button onClick={verify} disabled={loading}
+            className="bg-indigo-600 hover:bg-indigo-700 text-white w-full p-3 rounded-xl font-semibold">
             {loading ? "Verifying..." : "Access Admin Panel"}
           </button>
         </div>
@@ -121,110 +150,125 @@ export default function Admin() {
 
   return (
     <div className="min-h-screen bg-slate-100 p-6">
+      <div className="max-w-7xl mx-auto">
 
-      <div className="max-w-6xl mx-auto">
-
+        {/* HEADER */}
         <div className="flex items-center justify-between mb-8">
           <div>
             <h1 className="text-3xl font-bold text-slate-800">Admin Panel</h1>
             <p className="text-slate-500 text-sm">NexorBizs Technologies</p>
           </div>
-          <button
-            onClick={() => setAuthorized(false)}
-            className="bg-red-500 text-white px-4 py-2 rounded-lg text-sm"
-          >
+          <button onClick={() => setAuthorized(false)}
+            className="bg-red-500 text-white px-4 py-2 rounded-lg text-sm">
             Logout
           </button>
         </div>
 
+        {/* STATS SUMMARY */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+          <div className="bg-white rounded-xl shadow p-4">
+            <p className="text-slate-400 text-sm">Total Companies</p>
+            <p className="text-2xl font-bold">{companies.length}</p>
+          </div>
+          <div className="bg-white rounded-xl shadow p-4">
+            <p className="text-slate-400 text-sm">Active</p>
+            <p className="text-2xl font-bold text-green-600">
+              {companies.filter(c => c.subscription?.status === "active").length}
+            </p>
+          </div>
+          <div className="bg-white rounded-xl shadow p-4">
+            <p className="text-slate-400 text-sm">Suspended</p>
+            <p className="text-2xl font-bold text-orange-500">
+              {companies.filter(c => c.subscription?.status === "suspended").length}
+            </p>
+          </div>
+          <div className="bg-white rounded-xl shadow p-4">
+            <p className="text-slate-400 text-sm">Expiring Soon</p>
+            <p className="text-2xl font-bold text-red-500">
+              {companies.filter(c => c.daysLeft !== null && c.daysLeft <= 7 && c.daysLeft > 0).length}
+            </p>
+          </div>
+        </div>
+
         {/* SET SUBSCRIPTION */}
         <div className="bg-white rounded-xl shadow p-6 mb-6">
-
           <h2 className="text-lg font-bold mb-4">Set / Renew Subscription</h2>
-
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
 
-            <select
-              value={form.companyId}
-              onChange={e => setForm({ ...form, companyId: e.target.value })}
-              className="border p-3 rounded-lg text-sm col-span-2"
-            >
-              <option value="">Select Company</option>
-              {companies.map(c => (
-                <option key={c.id} value={c.id}>
-                  {c.name} (#{c.id})
-                </option>
-              ))}
-            </select>
+            <div className="col-span-2 flex flex-col gap-1">
+              <label className="text-xs font-semibold text-slate-500">Company</label>
+              <select value={form.companyId}
+                onChange={e => setForm({ ...form, companyId: e.target.value })}
+                className="border p-3 rounded-lg text-sm">
+                <option value="">Select Company</option>
+                {companies.map(c => (
+                  <option key={c.id} value={c.id}>{c.name} (#{c.id})</option>
+                ))}
+              </select>
+            </div>
 
-            <select
-              value={form.plan}
-              onChange={e => setForm({ ...form, plan: e.target.value })}
-              className="border p-3 rounded-lg text-sm"
-            >
-              <option value="trial">Trial</option>
-              <option value="basic">Basic</option>
-              <option value="pro">Pro</option>
-              <option value="enterprise">Enterprise</option>
-            </select>
+            <div className="flex flex-col gap-1">
+              <label className="text-xs font-semibold text-slate-500">Plan</label>
+              <select value={form.plan}
+                onChange={e => setForm({ ...form, plan: e.target.value })}
+                className="border p-3 rounded-lg text-sm">
+                <option value="trial">Trial</option>
+                <option value="basic">Basic</option>
+                <option value="pro">Pro</option>
+                <option value="enterprise">Enterprise</option>
+              </select>
+            </div>
 
-            <input
-              placeholder="Days"
-              type="number"
-              value={form.days}
-              onChange={e => setForm({ ...form, days: e.target.value })}
-              className="border p-3 rounded-lg text-sm"
-            />
+            <div className="flex flex-col gap-1">
+              <label className="text-xs font-semibold text-slate-500">Days</label>
+              <input type="number" placeholder="e.g. 30" value={form.days}
+                onChange={e => setForm({ ...form, days: e.target.value })}
+                className="border p-3 rounded-lg text-sm" />
+            </div>
 
-            <input
-              placeholder="Max Users"
-              type="number"
-              value={form.maxUsers}
-              onChange={e => setForm({ ...form, maxUsers: e.target.value })}
-              className="border p-3 rounded-lg text-sm"
-            />
+            <div className="flex flex-col gap-1">
+              <label className="text-xs font-semibold text-slate-500">Max Users</label>
+              <input type="number" placeholder="e.g. 5" value={form.maxUsers}
+                onChange={e => setForm({ ...form, maxUsers: e.target.value })}
+                className="border p-3 rounded-lg text-sm" />
+            </div>
 
-            <input
-              placeholder="Max Branches"
-              type="number"
-              value={form.maxBranches}
-              onChange={e => setForm({ ...form, maxBranches: e.target.value })}
-              className="border p-3 rounded-lg text-sm"
-            />
+            <div className="flex flex-col gap-1">
+              <label className="text-xs font-semibold text-slate-500">Max Branches</label>
+              <input type="number" placeholder="e.g. 2" value={form.maxBranches}
+                onChange={e => setForm({ ...form, maxBranches: e.target.value })}
+                className="border p-3 rounded-lg text-sm" />
+            </div>
 
           </div>
 
           <div className="flex gap-3 mt-3">
-            <input
-              placeholder="Notes (optional)"
-              value={form.notes}
-              onChange={e => setForm({ ...form, notes: e.target.value })}
-              className="border p-3 rounded-lg text-sm flex-1"
-            />
-            <button
-              onClick={setSubscription}
-              className="bg-indigo-600 hover:bg-indigo-700 text-white px-6 rounded-lg font-semibold"
-            >
-              Save
-            </button>
+            <div className="flex flex-col gap-1 flex-1">
+              <label className="text-xs font-semibold text-slate-500">Notes (optional)</label>
+              <input placeholder="e.g. Paid via UPI" value={form.notes}
+                onChange={e => setForm({ ...form, notes: e.target.value })}
+                className="border p-3 rounded-lg text-sm" />
+            </div>
+            <div className="flex flex-col justify-end">
+              <button onClick={setSubscription}
+                className="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-3 rounded-lg font-semibold">
+                Save
+              </button>
+            </div>
           </div>
-
         </div>
 
         {/* COMPANIES TABLE */}
         <div className="bg-white rounded-xl shadow overflow-x-auto">
-
           <div className="p-4 border-b flex items-center justify-between">
             <h2 className="text-lg font-bold">All Companies ({companies.length})</h2>
-            <button
-              onClick={loadCompanies}
-              className="bg-slate-100 hover:bg-slate-200 text-slate-700 px-4 py-2 rounded-lg text-sm"
-            >
+            <button onClick={loadCompanies}
+              className="bg-slate-100 hover:bg-slate-200 text-slate-700 px-4 py-2 rounded-lg text-sm">
               Refresh
             </button>
           </div>
 
-          <table className="w-full min-w-[800px] text-sm">
+          <table className="w-full min-w-[1100px] text-sm">
             <thead className="bg-slate-100">
               <tr>
                 <th className="p-3 text-left">ID</th>
@@ -233,20 +277,22 @@ export default function Admin() {
                 <th className="p-3 text-center">Plan</th>
                 <th className="p-3 text-center">Status</th>
                 <th className="p-3 text-center">Expiry</th>
-                <th className="p-3 text-center">Users</th>
-                <th className="p-3 text-center">Action</th>
+                <th className="p-3 text-center">Days Left</th>
+                <th className="p-3 text-center">Users</th>       {/* ⭐ */}
+                <th className="p-3 text-center">Branches</th>    {/* ⭐ */}
+                <th className="p-3 text-center">Sales</th>       {/* ⭐ */}
+                <th className="p-3 text-center">Notes</th>       {/* ⭐ */}
+                <th className="p-3 text-center">Actions</th>
               </tr>
             </thead>
             <tbody>
               {companies.length === 0 && (
                 <tr>
-                  <td colSpan="8" className="p-6 text-center text-slate-400">
-                    No companies found
-                  </td>
+                  <td colSpan="12" className="p-6 text-center text-slate-400">No companies found</td>
                 </tr>
               )}
               {companies.map(c => (
-                <tr key={c.id} className="border-t hover:bg-slate-50">
+                <tr key={c.id} className={`border-t hover:bg-slate-50 ${rowBg(c)}`}>
                   <td className="p-3 text-slate-500">#{c.id}</td>
                   <td className="p-3 font-semibold">{c.name}</td>
                   <td className="p-3 text-slate-500">{c.email}</td>
@@ -265,41 +311,79 @@ export default function Admin() {
                   <td className="p-3 text-center text-slate-500">
                     {c.subscription?.expiryDate
                       ? new Date(c.subscription.expiryDate).toLocaleDateString("en-IN")
-                      : "—"
-                    }
+                      : "—"}
                   </td>
+
+                  {/* ⭐ DAYS LEFT */}
                   <td className="p-3 text-center">
-                    {c.subscription?.maxUsers || "—"}
+                    {c.daysLeft !== null ? (
+                      <span className={`font-semibold text-xs ${
+                        c.daysLeft <= 0 ? "text-red-600" :
+                        c.daysLeft <= 7 ? "text-orange-500" :
+                        "text-green-600"
+                      }`}>
+                        {c.daysLeft <= 0 ? "Expired" : `${c.daysLeft}d`}
+                      </span>
+                    ) : "—"}
                   </td>
+
+                  {/* ⭐ COUNTS */}
+                  <td className="p-3 text-center text-slate-600">{c.userCount ?? "—"}</td>
+                  <td className="p-3 text-center text-slate-600">{c.branchCount ?? "—"}</td>
+                  <td className="p-3 text-center text-slate-600">{c.salesCount ?? "—"}</td>
+
+                  {/* ⭐ NOTES */}
+                  <td className="p-3 text-center text-slate-400 text-xs max-w-[120px] truncate">
+                    {c.subscription?.notes || "—"}
+                  </td>
+
+                  {/* ⭐ ACTIONS */}
                   <td className="p-3 text-center">
-                    {c.subscription?.status !== "suspended" ? (
-                      <button
-                        onClick={() => suspendCompany(c.id)}
-                        className="bg-orange-500 hover:bg-orange-600 text-white px-3 py-1 rounded text-xs"
-                      >
-                        Suspend
-                      </button>
-                    ) : (
-                      <button
-                        onClick={() => {
-                          setForm({ ...form, companyId: String(c.id), days: "30" });
-                          window.scrollTo({ top: 0, behavior: "smooth" });
-                        }}
-                        className="bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded text-xs"
-                      >
-                        Renew
-                      </button>
-                    )}
+                    <div className="flex justify-center gap-1 flex-wrap">
+
+                      {/* Extend +30 / +90 */}
+                      {c.subscription && (
+                        <>
+                          <button onClick={() => extendDays(c.id, 30)}
+                            className="bg-blue-500 hover:bg-blue-600 text-white px-2 py-1 rounded text-xs">
+                            +30d
+                          </button>
+                          <button onClick={() => extendDays(c.id, 90)}
+                            className="bg-blue-700 hover:bg-blue-800 text-white px-2 py-1 rounded text-xs">
+                            +90d
+                          </button>
+                        </>
+                      )}
+
+                      {/* Suspend / Unsuspend */}
+                      {c.subscription?.status !== "suspended" ? (
+                        <button onClick={() => suspendCompany(c.id)}
+                          className="bg-orange-500 hover:bg-orange-600 text-white px-2 py-1 rounded text-xs">
+                          Suspend
+                        </button>
+                      ) : (
+                        <button onClick={() => unsuspendCompany(c.id)}
+                          className="bg-green-500 hover:bg-green-600 text-white px-2 py-1 rounded text-xs">
+                          Reactivate
+                        </button>
+                      )}
+
+                    </div>
                   </td>
                 </tr>
               ))}
             </tbody>
           </table>
+        </div>
 
+        {/* LEGEND */}
+        <div className="mt-4 flex gap-4 text-xs text-slate-500">
+          <span className="flex items-center gap-1"><span className="w-3 h-3 rounded bg-red-100 inline-block" /> Expired</span>
+          <span className="flex items-center gap-1"><span className="w-3 h-3 rounded bg-red-50 inline-block" /> Expiring ≤ 7 days</span>
+          <span className="flex items-center gap-1"><span className="w-3 h-3 rounded bg-orange-50 inline-block" /> Suspended</span>
         </div>
 
       </div>
-
     </div>
   );
 }
