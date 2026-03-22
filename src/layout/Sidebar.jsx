@@ -31,6 +31,7 @@ export default function Sidebar({ setPage, sidebarOpen, setSidebarOpen, role = "
     { name: "Purchases", icon: ShoppingBag, key: "purchases", roles: ["OWNER", "MANAGER"] },
     { name: "Users", icon: UserCog, key: "users", roles: ["OWNER"] },
     { name: "Settings", icon: Settings, key: "settings", roles: ["OWNER"] },
+    { name: "Branches", icon: GitBranch, key: "branches", roles: ["OWNER"] },
   ];
 
   const menu = allMenu.filter(item => item.roles.includes(role));
