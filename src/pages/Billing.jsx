@@ -22,9 +22,14 @@ export default function Billing(){
   const [activeProductIndex, setActiveProductIndex] = useState(0);
   const [activeCartIndex, setActiveCartIndex] = useState(0);
 
-  // ⭐ BRANCH
+  // ⭐ BRANCH - filter by user's assigned branches
   const [branches, setBranches] = useState([]);
   const [branchId, setBranchId] = useState("");
+
+  // Get current user info from localStorage
+  const user = JSON.parse(localStorage.getItem("user") || "{}");
+  const role = user?.role || "OWNER";
+  const userBranches = user?.branches || []; // assigned branches
 
   useEffect(() => {
     loadProducts();
@@ -33,20 +38,27 @@ export default function Billing(){
   }, []);
 
   const loadCustomers = async () => {
-    try{
+    try {
       const res = await API.get("/customers");
       setCustomers(res.data || []);
-    }catch{
+    } catch {
       console.log("customer load fail");
     }
   };
 
-  // ⭐ LOAD BRANCHES
+  // ⭐ LOAD BRANCHES - filtered by user's assigned branches
   const loadBranches = async () => {
     try {
       const res = await API.get("/branches");
-      setBranches(res.data || []);
-      if (res.data?.length > 0) setBranchId(res.data[0].id);
+      let allBranches = res.data || [];
+
+      // OWNER/MANAGER(all) see all, others see only assigned
+      const filtered = role === "OWNER"
+        ? allBranches
+        : allBranches.filter(b => userBranches.some(ub => ub.id === b.id));
+
+      setBranches(filtered);
+      if (filtered.length > 0) setBranchId(filtered[0].id);
     } catch {
       console.log("branch load fail");
     }
@@ -158,7 +170,7 @@ export default function Billing(){
         amountReceived: paymentMode === "upi" ? roundedTotal : Number(amountReceived || 0),
         discountType,
         discountValue: Number(discountValue || 0),
-        branchId: branchId ? Number(branchId) : null,  // ⭐ SEND BRANCH
+        branchId: branchId ? Number(branchId) : null,
         items: cart.map(i => ({
           productId: i.id,
           qty: i.qty,
@@ -194,7 +206,7 @@ export default function Billing(){
 
       <div className="xl:col-span-8 space-y-4">
 
-        {/* ⭐ BRANCH SELECTOR */}
+        {/* ⭐ BRANCH SELECTOR - only assigned branches */}
         {branches.length > 0 && (
           <select
             value={branchId}
@@ -301,7 +313,7 @@ export default function Billing(){
 
           <h2 className="text-2xl font-bold mb-6">Summary</h2>
 
-          {/* ⭐ SHOW SELECTED BRANCH */}
+          {/* SHOW SELECTED BRANCH */}
           {branchId && branches.length > 0 && (
             <div className="bg-blue-50 border border-blue-200 rounded-lg p-2 mb-4 text-sm text-blue-700 font-semibold">
               🏪 {branches.find(b => b.id === Number(branchId))?.name}
