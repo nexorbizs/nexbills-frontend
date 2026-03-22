@@ -23,17 +23,17 @@ export default function MainLayout() {
   const renderPage = () => {
     switch (page) {
       case "dashboard": return <Dashboard />;
-      case "billing": return <Billing />;
-      case "products": return role === "CASHIER" ? <Billing /> : <Products />;
-      case "customers": return role === "CASHIER" ? <Billing /> : <Customers />;
-      case "sales": return role === "CASHIER" ? <Billing /> : <Sales />;
-      case "reports": return role === "CASHIER" ? <Billing /> : <Reports />;
-      case "suppliers": return role === "CASHIER" ? <Billing /> : <Suppliers />;
-      case "purchases": return role === "CASHIER" ? <Billing /> : <Purchases />;
-      case "users": return role === "OWNER" ? <Users /> : <Dashboard />;
-      case "settings": return role === "OWNER" ? <Settings /> : <Dashboard />;
-      case "branches": return role === "OWNER" ? <Branches /> : <Dashboard />;
-      default: return <Dashboard />;
+      case "billing":   return <Billing />;
+      case "customers": return (role === "CASHIER" || role === "MANAGER" || role === "OWNER") ? <Customers /> : <Dashboard />; // ⭐ fixed
+      case "products":  return role === "OWNER" || role === "MANAGER" ? <Products /> : <Dashboard />;
+      case "sales":     return role === "OWNER" || role === "MANAGER" ? <Sales /> : <Dashboard />;
+      case "reports":   return role === "OWNER" || role === "MANAGER" ? <Reports /> : <Dashboard />;
+      case "suppliers": return role === "OWNER" || role === "MANAGER" ? <Suppliers /> : <Dashboard />;
+      case "purchases": return role === "OWNER" || role === "MANAGER" ? <Purchases /> : <Dashboard />;
+      case "users":     return role === "OWNER" ? <Users /> : <Dashboard />;
+      case "settings":  return role === "OWNER" ? <Settings /> : <Dashboard />;
+      case "branches":  return role === "OWNER" ? <Branches /> : <Dashboard />;
+      default:          return <Dashboard />;
     }
   };
 
