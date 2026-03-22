@@ -44,7 +44,7 @@ export default function MainLayout() {
       <Sidebar setPage={(p) => { setPage(p); setSidebarOpen(false); }}
         sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} role={role} />
       <div className="flex-1 flex flex-col w-full">
-        <div className="h-16 bg-white border-b flex items-center justify-between px-4 md:px-8 shadow-sm">
+      <div className="sticky top-0 z-30 h-16 bg-white border-b flex items-center justify-between px-4 md:px-8 shadow-sm">
           <div className="flex items-center gap-3">
             <button className="md:hidden text-2xl text-slate-700" onClick={() => setSidebarOpen(true)}>☰</button>
             <img src={logo} alt="NexBills" className="w-10 h-10 md:w-12 md:h-12 rounded-full bg-white p-1 shadow" />
