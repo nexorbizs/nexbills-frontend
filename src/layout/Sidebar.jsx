@@ -1,5 +1,5 @@
 import logo from "../assets/NexBills Logo.png";
-import { LayoutDashboard, ShoppingCart, Package, Users, Receipt, BarChart3, Settings, LogOut, X, Truck, ShoppingBag, Crown, UserCog } from "lucide-react";
+import { LayoutDashboard, ShoppingCart, Package, Users, Receipt, BarChart3, Settings, LogOut, X, Truck, ShoppingBag, Crown, UserCog, Building2 } from "lucide-react";
 import { useCartStore } from "../store/cartStore";
 import { useState } from "react";
 
@@ -31,7 +31,7 @@ export default function Sidebar({ setPage, sidebarOpen, setSidebarOpen, role = "
     { name: "Purchases", icon: ShoppingBag, key: "purchases", roles: ["OWNER", "MANAGER"] },
     { name: "Users", icon: UserCog, key: "users", roles: ["OWNER"] },
     { name: "Settings", icon: Settings, key: "settings", roles: ["OWNER"] },
-    { name: "Branches", icon: GitBranch, key: "branches", roles: ["OWNER"] },
+    { name: "Branches", icon: Building2, key: "branches", roles: ["OWNER"] },
   ];
 
   const menu = allMenu.filter(item => item.roles.includes(role));
