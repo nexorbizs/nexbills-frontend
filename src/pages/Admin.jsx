@@ -1,6 +1,15 @@
 import { useState } from "react";
 import API from "../api";
 
+// ⭐ Plan days mapping
+const planDays = {
+  trial: 7,
+  basic: 30,
+  pro: 180,
+  enterprise: 365,
+  lifetime: 36500
+};
+
 export default function Admin() {
 
   const [secret, setSecret] = useState("");
@@ -70,7 +79,7 @@ export default function Admin() {
     }
   };
 
-  /* ================= UNSUSPEND ================= */ // ⭐ NEW
+  /* ================= UNSUSPEND ================= */
 
   const unsuspendCompany = async (companyId) => {
     if (!window.confirm("Reactivate this company?")) return;
@@ -83,7 +92,7 @@ export default function Admin() {
     }
   };
 
-  /* ================= EXTEND ================= */ // ⭐ NEW
+  /* ================= EXTEND ================= */
 
   const extendDays = async (companyId, days) => {
     if (!window.confirm(`Extend by ${days} days?`)) return;
@@ -106,17 +115,18 @@ export default function Admin() {
   };
 
   const planColor = (plan) => {
+    if (plan === "lifetime") return "bg-slate-800 text-white";
     if (plan === "enterprise") return "bg-green-100 text-green-700";
     if (plan === "pro") return "bg-purple-100 text-purple-700";
     if (plan === "basic") return "bg-blue-100 text-blue-700";
     return "bg-yellow-100 text-yellow-700";
   };
 
-  // ⭐ Row highlight for expiring soon
   const rowBg = (c) => {
     if (c.subscription?.status === "suspended") return "bg-orange-50";
-    if (c.daysLeft !== null && c.daysLeft <= 7 && c.daysLeft > 0) return "bg-red-50";
+    if (c.subscription?.plan === "lifetime") return ""; // ⭐ never highlight lifetime
     if (c.daysLeft !== null && c.daysLeft <= 0) return "bg-red-100";
+    if (c.daysLeft !== null && c.daysLeft <= 7) return "bg-red-50";
     return "";
   };
 
@@ -185,7 +195,12 @@ export default function Admin() {
           <div className="bg-white rounded-xl shadow p-4">
             <p className="text-slate-400 text-sm">Expiring Soon</p>
             <p className="text-2xl font-bold text-red-500">
-              {companies.filter(c => c.daysLeft !== null && c.daysLeft <= 7 && c.daysLeft > 0).length}
+              {companies.filter(c =>
+                c.subscription?.plan !== "lifetime" &&
+                c.daysLeft !== null &&
+                c.daysLeft <= 7 &&
+                c.daysLeft > 0
+              ).length}
             </p>
           </div>
         </div>
@@ -207,23 +222,34 @@ export default function Admin() {
               </select>
             </div>
 
+            {/* ⭐ Plan auto-fills days */}
             <div className="flex flex-col gap-1">
               <label className="text-xs font-semibold text-slate-500">Plan</label>
               <select value={form.plan}
-                onChange={e => setForm({ ...form, plan: e.target.value })}
+                onChange={e => setForm({
+                  ...form,
+                  plan: e.target.value,
+                  days: planDays[e.target.value] || 30
+                })}
                 className="border p-3 rounded-lg text-sm">
-                <option value="trial">Trial</option>
-                <option value="basic">Basic</option>
-                <option value="pro">Pro</option>
-                <option value="enterprise">Enterprise</option>
+                <option value="trial">Trial (7 days)</option>
+                <option value="basic">Basic (30 days)</option>
+                <option value="pro">Pro (6 months)</option>
+                <option value="enterprise">Enterprise (12 months)</option>
+                <option value="lifetime">Lifetime ♾️ (Permanent)</option>
               </select>
             </div>
 
+            {/* ⭐ Days auto-filled but still editable */}
             <div className="flex flex-col gap-1">
-              <label className="text-xs font-semibold text-slate-500">Days</label>
-              <input type="number" placeholder="e.g. 30" value={form.days}
+              <label className="text-xs font-semibold text-slate-500">
+                Days {form.plan === "lifetime" ? "(Permanent)" : "(auto-filled)"}
+              </label>
+              <input type="number" value={form.days}
                 onChange={e => setForm({ ...form, days: e.target.value })}
-                className="border p-3 rounded-lg text-sm" />
+                disabled={form.plan === "lifetime"}
+                className={`border p-3 rounded-lg text-sm ${form.plan === "lifetime" ? "bg-slate-100 text-slate-400 cursor-not-allowed" : "bg-white"}`}
+              />
             </div>
 
             <div className="flex flex-col gap-1">
@@ -278,10 +304,10 @@ export default function Admin() {
                 <th className="p-3 text-center">Status</th>
                 <th className="p-3 text-center">Expiry</th>
                 <th className="p-3 text-center">Days Left</th>
-                <th className="p-3 text-center">Users</th>       {/* ⭐ */}
-                <th className="p-3 text-center">Branches</th>    {/* ⭐ */}
-                <th className="p-3 text-center">Sales</th>       {/* ⭐ */}
-                <th className="p-3 text-center">Notes</th>       {/* ⭐ */}
+                <th className="p-3 text-center">Users</th>
+                <th className="p-3 text-center">Branches</th>
+                <th className="p-3 text-center">Sales</th>
+                <th className="p-3 text-center">Notes</th>
                 <th className="p-3 text-center">Actions</th>
               </tr>
             </thead>
@@ -309,14 +335,18 @@ export default function Admin() {
                     {c.subscription?.status || "—"}
                   </td>
                   <td className="p-3 text-center text-slate-500">
-                    {c.subscription?.expiryDate
-                      ? new Date(c.subscription.expiryDate).toLocaleDateString("en-IN")
-                      : "—"}
+                    {c.subscription?.plan === "lifetime"
+                      ? "♾️ Permanent"
+                      : c.subscription?.expiryDate
+                        ? new Date(c.subscription.expiryDate).toLocaleDateString("en-IN")
+                        : "—"}
                   </td>
 
                   {/* ⭐ DAYS LEFT */}
                   <td className="p-3 text-center">
-                    {c.daysLeft !== null ? (
+                    {c.subscription?.plan === "lifetime" ? (
+                      <span className="font-semibold text-xs text-slate-700">♾️</span>
+                    ) : c.daysLeft !== null ? (
                       <span className={`font-semibold text-xs ${
                         c.daysLeft <= 0 ? "text-red-600" :
                         c.daysLeft <= 7 ? "text-orange-500" :
@@ -327,22 +357,17 @@ export default function Admin() {
                     ) : "—"}
                   </td>
 
-                  {/* ⭐ COUNTS */}
                   <td className="p-3 text-center text-slate-600">{c.userCount ?? "—"}</td>
                   <td className="p-3 text-center text-slate-600">{c.branchCount ?? "—"}</td>
                   <td className="p-3 text-center text-slate-600">{c.salesCount ?? "—"}</td>
-
-                  {/* ⭐ NOTES */}
                   <td className="p-3 text-center text-slate-400 text-xs max-w-[120px] truncate">
                     {c.subscription?.notes || "—"}
                   </td>
 
-                  {/* ⭐ ACTIONS */}
                   <td className="p-3 text-center">
                     <div className="flex justify-center gap-1 flex-wrap">
-
-                      {/* Extend +30 / +90 */}
-                      {c.subscription && (
+                      {/* ⭐ Hide extend for lifetime */}
+                      {c.subscription && c.subscription.plan !== "lifetime" && (
                         <>
                           <button onClick={() => extendDays(c.id, 30)}
                             className="bg-blue-500 hover:bg-blue-600 text-white px-2 py-1 rounded text-xs">
@@ -354,8 +379,6 @@ export default function Admin() {
                           </button>
                         </>
                       )}
-
-                      {/* Suspend / Unsuspend */}
                       {c.subscription?.status !== "suspended" ? (
                         <button onClick={() => suspendCompany(c.id)}
                           className="bg-orange-500 hover:bg-orange-600 text-white px-2 py-1 rounded text-xs">
@@ -367,7 +390,6 @@ export default function Admin() {
                           Reactivate
                         </button>
                       )}
-
                     </div>
                   </td>
                 </tr>
