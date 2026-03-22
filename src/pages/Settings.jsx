@@ -1,6 +1,9 @@
 import { useEffect, useState } from "react";
 import API from "../api";
 
+const CLOUD_NAME = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME;
+const UPLOAD_PRESET = import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET;
+
 export default function Settings() {
 
   const [form, setForm] = useState({
@@ -8,12 +11,13 @@ export default function Settings() {
     gstNumber: "",
     phone: "",
     address: "",
-    upiId: "",    // ⭐
-    logoUrl: ""   // ⭐
+    upiId: "",
+    logoUrl: ""
   });
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [uploading, setUploading] = useState(false); // ⭐
 
   useEffect(() => { loadSettings(); }, []);
 
@@ -26,8 +30,8 @@ export default function Settings() {
           gstNumber: res.data.gstNumber || "",
           phone:     res.data.phone     || "",
           address:   res.data.address   || "",
-          upiId:     res.data.upiId     || "", // ⭐
-          logoUrl:   res.data.logoUrl   || ""  // ⭐
+          upiId:     res.data.upiId     || "",
+          logoUrl:   res.data.logoUrl   || ""
         });
       }
     } catch {
@@ -45,6 +49,36 @@ export default function Settings() {
     return () => window.removeEventListener("keydown", handleKey);
   }, [form]);
 
+  // ⭐ CLOUDINARY UPLOAD
+  const uploadLogo = async (file) => {
+    if (!file) return;
+    if (file.size > 2 * 1024 * 1024)
+      return alert("Image must be under 2MB");
+
+    const formData = new FormData();
+    formData.append("file", file);
+    formData.append("upload_preset", UPLOAD_PRESET);
+
+    try {
+      setUploading(true);
+      const res = await fetch(
+        `https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`,
+        { method: "POST", body: formData }
+      );
+      const data = await res.json();
+      if (data.secure_url) {
+        setForm(prev => ({ ...prev, logoUrl: data.secure_url }));
+        alert("Logo uploaded successfully ✅");
+      } else {
+        alert("Upload failed. Try again.");
+      }
+    } catch {
+      alert("Upload failed. Check your internet connection.");
+    } finally {
+      setUploading(false);
+    }
+  };
+
   const validate = () => {
     if (!form.shopName.trim()) return alert("Business name required");
     if (form.phone && !/^[6-9][0-9]{9}$/.test(form.phone)) return alert("Invalid phone number");
@@ -61,8 +95,8 @@ export default function Settings() {
         gstNumber: form.gstNumber.trim().toUpperCase(),
         phone:     form.phone.trim(),
         address:   form.address.trim(),
-        upiId:     form.upiId.trim(),   // ⭐
-        logoUrl:   form.logoUrl.trim()  // ⭐
+        upiId:     form.upiId.trim(),
+        logoUrl:   form.logoUrl.trim()
       });
       window.dispatchEvent(new Event("settingsUpdated"));
       alert("Settings Saved Successfully ✅");
@@ -98,7 +132,7 @@ export default function Settings() {
             onChange={v => setForm({ ...form, address: v })} />
         </Card>
 
-        {/* ⭐ NEW CARD */}
+        {/* ⭐ PAYMENT & BRANDING */}
         <Card title="Payment & Branding">
           <Input
             label="UPI ID (for QR code on receipt)"
@@ -106,29 +140,62 @@ export default function Settings() {
             onChange={v => setForm({ ...form, upiId: v })}
             placeholder="yourname@upi"
           />
-          <Input
-            label="Logo URL (image link for receipt)"
-            value={form.logoUrl}
-            onChange={v => setForm({ ...form, logoUrl: v })}
-            placeholder="https://your-logo-url.com/logo.png"
-          />
-          {/* ⭐ Logo preview */}
-          {form.logoUrl && (
-            <div className="mt-2">
-              <p className="text-xs text-slate-400 mb-1">Logo Preview:</p>
-              <img
-                src={form.logoUrl}
-                alt="Logo Preview"
-                className="h-16 object-contain border rounded-lg p-1"
-                onError={e => { e.target.style.display = "none"; }}
-              />
+
+          {/* ⭐ LOGO UPLOAD */}
+          <div>
+            <p className="text-sm text-gray-500 mb-2">Shop Logo (shown on receipt)</p>
+            <div className="flex items-center gap-3 flex-wrap">
+              <label className={`cursor-pointer px-4 py-2 rounded-lg text-sm font-semibold text-white transition ${uploading ? "bg-slate-400 cursor-not-allowed" : "bg-blue-600 hover:bg-blue-700"}`}>
+                {uploading ? "Uploading..." : "📁 Upload Logo"}
+                <input
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  disabled={uploading}
+                  onChange={e => uploadLogo(e.target.files[0])}
+                />
+              </label>
+              {form.logoUrl && (
+                <button
+                  onClick={() => setForm(prev => ({ ...prev, logoUrl: "" }))}
+                  className="text-red-500 text-sm hover:underline"
+                >
+                  Remove Logo
+                </button>
+              )}
             </div>
-          )}
+
+            {/* Logo preview */}
+            {form.logoUrl && (
+              <div className="mt-3">
+                <p className="text-xs text-slate-400 mb-1">Preview:</p>
+                <img
+                  src={form.logoUrl}
+                  alt="Logo Preview"
+                  className="h-16 object-contain border rounded-lg p-1 bg-white"
+                  onError={e => { e.target.style.display = "none"; }}
+                />
+              </div>
+            )}
+
+            {!form.logoUrl && (
+              <p className="text-xs text-slate-400 mt-2">
+                Accepted: JPG, PNG, SVG — Max 2MB
+              </p>
+            )}
+          </div>
         </Card>
 
         {/* ⭐ RECEIPT PREVIEW */}
-        <Card title="Receipt Info">
+        <Card title="Receipt Preview">
           <div className="bg-slate-50 border rounded-lg p-4 font-mono text-xs space-y-1">
+            {form.logoUrl && (
+              <div className="flex justify-center mb-2">
+                <img src={form.logoUrl} alt="Logo"
+                  className="h-12 object-contain"
+                  onError={e => { e.target.style.display = "none"; }} />
+              </div>
+            )}
             <p className="text-center font-bold text-sm">{form.shopName || "Your Shop Name"}</p>
             {form.address && <p className="text-center">{form.address}</p>}
             {form.phone && <p className="text-center">Ph: {form.phone}</p>}
