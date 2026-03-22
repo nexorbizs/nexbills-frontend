@@ -11,27 +11,25 @@ export default function Billing(){
 
   const [search, setSearch] = useState("");
   const [customerSearch, setCustomerSearch] = useState("");
-
   const [customerName, setCustomerName] = useState("");
   const [customerPhone, setCustomerPhone] = useState("");
-
   const [customers, setCustomers] = useState([]);
-
   const [paymentMode, setPaymentMode] = useState("cash");
   const [amountReceived, setAmountReceived] = useState("");
-
-  // ⭐ BILL DISCOUNT
   const [discountType, setDiscountType] = useState("percent");
   const [discountValue, setDiscountValue] = useState("");
-
   const [loading, setLoading] = useState(false);
-
   const [activeProductIndex, setActiveProductIndex] = useState(0);
   const [activeCartIndex, setActiveCartIndex] = useState(0);
+
+  // ⭐ BRANCH
+  const [branches, setBranches] = useState([]);
+  const [branchId, setBranchId] = useState("");
 
   useEffect(() => {
     loadProducts();
     loadCustomers();
+    loadBranches();
   }, []);
 
   const loadCustomers = async () => {
@@ -40,6 +38,17 @@ export default function Billing(){
       setCustomers(res.data || []);
     }catch{
       console.log("customer load fail");
+    }
+  };
+
+  // ⭐ LOAD BRANCHES
+  const loadBranches = async () => {
+    try {
+      const res = await API.get("/branches");
+      setBranches(res.data || []);
+      if (res.data?.length > 0) setBranchId(res.data[0].id);
+    } catch {
+      console.log("branch load fail");
     }
   };
 
@@ -69,70 +78,31 @@ export default function Billing(){
   /* ================= KEYBOARD POS ================= */
 
   useEffect(() => {
-
     const handleKey = (e) => {
-
-      if (["INPUT","TEXTAREA"].includes(document.activeElement.tagName))
-        return;
+      if (["INPUT","TEXTAREA"].includes(document.activeElement.tagName)) return;
 
       if(search && filteredProducts.length){
-
-        if(e.key === "ArrowDown"){
-          setActiveProductIndex(i =>
-            i < filteredProducts.length - 1 ? i + 1 : 0
-          );
-        }
-
-        if(e.key === "ArrowUp"){
-          setActiveProductIndex(i =>
-            i > 0 ? i - 1 : filteredProducts.length - 1
-          );
-        }
-
-        if(e.key === "Enter"){
-          addToCart(filteredProducts[activeProductIndex]);
-          setSearch("");
-        }
-
+        if(e.key === "ArrowDown") setActiveProductIndex(i => i < filteredProducts.length - 1 ? i + 1 : 0);
+        if(e.key === "ArrowUp") setActiveProductIndex(i => i > 0 ? i - 1 : filteredProducts.length - 1);
+        if(e.key === "Enter"){ addToCart(filteredProducts[activeProductIndex]); setSearch(""); }
         return;
       }
 
       if(cart.length){
-
-        if(e.key === "ArrowRight"){
-          setActiveCartIndex(i =>
-            i < cart.length - 1 ? i + 1 : 0
-          );
-        }
-
-        if(e.key === "ArrowLeft"){
-          setActiveCartIndex(i =>
-            i > 0 ? i - 1 : cart.length - 1
-          );
-        }
-
-        if(e.key === "ArrowUp"){
-          increaseQty(cart[activeCartIndex].id);
-        }
-
-        if(e.key === "ArrowDown"){
-          decreaseQty(cart[activeCartIndex].id);
-        }
-
+        if(e.key === "ArrowRight") setActiveCartIndex(i => i < cart.length - 1 ? i + 1 : 0);
+        if(e.key === "ArrowLeft") setActiveCartIndex(i => i > 0 ? i - 1 : cart.length - 1);
+        if(e.key === "ArrowUp") increaseQty(cart[activeCartIndex].id);
+        if(e.key === "ArrowDown") decreaseQty(cart[activeCartIndex].id);
       }
 
-      if(e.key === "Enter" && !search){
-        createBill();
-      }
-
+      if(e.key === "Enter" && !search) createBill();
     };
 
     window.addEventListener("keydown", handleKey);
     return () => window.removeEventListener("keydown", handleKey);
-
   }, [search, filteredProducts, cart, activeProductIndex, activeCartIndex]);
 
-  /* ================= GST CALC WITH ITEM DISCOUNT ================= */
+  /* ================= GST CALC ================= */
 
   const calcRow = (item) => {
     const discount = Number(item.discount || 0);
@@ -149,7 +119,6 @@ export default function Billing(){
     return s + discountedPrice * i.qty;
   }, 0);
 
-  // ⭐ BILL DISCOUNT CALC
   const billDiscountAmount = discountType === "percent"
     ? subTotal * Number(discountValue || 0) / 100
     : Number(discountValue || 0);
@@ -165,41 +134,31 @@ export default function Billing(){
 
   const gstMultiplier = subTotal > 0 ? discountedSubTotal / subTotal : 1;
   const adjustedGST = totalGST * gstMultiplier;
-
   const exactTotal = discountedSubTotal + adjustedGST;
   const roundedTotal = Math.round(exactTotal);
   const roundOff = roundedTotal - exactTotal;
 
-  const balance =
-    paymentMode === "cash"
-      ? Number(amountReceived || 0) - roundedTotal
-      : 0;
+  const balance = paymentMode === "cash" ? Number(amountReceived || 0) - roundedTotal : 0;
 
   /* ================= BILL ================= */
 
   const createBill = async () => {
-
     if(cart.length === 0) return alert("Cart empty");
     if(!customerName.trim()) return alert("Customer required");
 
-    const width = window.confirm(
-      "Click OK for 80mm\nClick Cancel for 58mm"
-    ) ? "80mm" : "58mm";
+    const width = window.confirm("Click OK for 80mm\nClick Cancel for 58mm") ? "80mm" : "58mm";
 
     try {
-
       setLoading(true);
 
       const res = await API.post("/sales", {
         customerName,
         customerPhone,
         paymentMode,
-        amountReceived:
-          paymentMode === "upi"
-            ? roundedTotal
-            : Number(amountReceived || 0),
+        amountReceived: paymentMode === "upi" ? roundedTotal : Number(amountReceived || 0),
         discountType,
         discountValue: Number(discountValue || 0),
+        branchId: branchId ? Number(branchId) : null,  // ⭐ SEND BRANCH
         items: cart.map(i => ({
           productId: i.id,
           qty: i.qty,
@@ -213,7 +172,6 @@ export default function Billing(){
       };
 
       printThermal(saleData, width);
-
       alert("Invoice Created: " + res.data.sale.invoiceNo);
 
       clearCart();
@@ -236,6 +194,19 @@ export default function Billing(){
 
       <div className="xl:col-span-8 space-y-4">
 
+        {/* ⭐ BRANCH SELECTOR */}
+        {branches.length > 0 && (
+          <select
+            value={branchId}
+            onChange={e => setBranchId(e.target.value)}
+            className="border p-3 w-full rounded-xl bg-white font-semibold text-slate-700"
+          >
+            {branches.map(b => (
+              <option key={b.id} value={b.id}>🏪 {b.name}</option>
+            ))}
+          </select>
+        )}
+
         <input
           placeholder="Search Customer (Name / Phone)"
           value={customerSearch}
@@ -246,43 +217,27 @@ export default function Billing(){
         {customerSearch && (
           <div className="bg-white border rounded-xl shadow">
             {filteredCustomers.map(c=>(
-              <div key={c.id}
-                className="p-3 cursor-pointer hover:bg-slate-100"
-                onClick={()=>selectCustomer(c)}>
+              <div key={c.id} className="p-3 cursor-pointer hover:bg-slate-100" onClick={()=>selectCustomer(c)}>
                 {c.name} - {c.phone}
               </div>
             ))}
           </div>
         )}
 
-        <input
-          placeholder="Customer Name"
-          value={customerName}
-          onChange={e=>setCustomerName(e.target.value)}
-          className="border p-3 w-full rounded-xl"
-        />
+        <input placeholder="Customer Name" value={customerName}
+          onChange={e=>setCustomerName(e.target.value)} className="border p-3 w-full rounded-xl" />
 
-        <input
-          placeholder="Customer Phone"
-          value={customerPhone}
-          onChange={e=>setCustomerPhone(e.target.value)}
-          className="border p-3 w-full rounded-xl"
-        />
+        <input placeholder="Customer Phone" value={customerPhone}
+          onChange={e=>setCustomerPhone(e.target.value)} className="border p-3 w-full rounded-xl" />
 
-        <input
-          placeholder="Search Product"
-          value={search}
-          onChange={e=>setSearch(e.target.value)}
-          className="border p-3 w-full rounded-xl"
-        />
+        <input placeholder="Search Product" value={search}
+          onChange={e=>setSearch(e.target.value)} className="border p-3 w-full rounded-xl" />
 
         {search && (
           <div className="bg-white border rounded-xl shadow">
             {filteredProducts.map((p,index)=>(
               <div key={p.id}
-                className={`p-3 cursor-pointer ${
-                  index === activeProductIndex ? "bg-blue-100" : ""
-                }`}
+                className={`p-3 cursor-pointer ${index === activeProductIndex ? "bg-blue-100" : ""}`}
                 onClick={()=>{ addToCart(p); setSearch(""); }}>
                 {p.name} ₹{p.price}
               </div>
@@ -292,83 +247,51 @@ export default function Billing(){
 
         {/* CART TABLE */}
         <div className="bg-white rounded-2xl shadow-lg overflow-x-auto">
-
           {cart.length === 0
-            ? <div className="p-6 text-center text-gray-400">
-                No items in cart
-              </div>
-            :
-          <table className="min-w-[650px] w-full text-sm">
-            <thead className="bg-slate-100">
-              <tr>
-                <th className="p-4 text-left">Item</th>
-                <th className="p-4 text-center">Qty</th>
-                <th className="p-4 text-right">Price</th>
-                <th className="p-4 text-center">Disc%</th>
-                <th className="p-4 text-right">Total</th>
-              </tr>
-            </thead>
-
-            <tbody>
-              {cart.map(item=>(
-                <tr key={item.id} className="border-t">
-
-                  <td className="p-4">
-                    {item.name}
-                    {Number(item.discount || 0) > 0 && (
-                      <span className="ml-2 text-xs text-green-600 font-semibold">
-                        -{item.discount}%
-                      </span>
-                    )}
-                  </td>
-
-                  <td className="p-4 text-center">
-                    <div className="flex justify-center gap-2">
-                      <button
-                        onClick={()=>decreaseQty(item.id)}
-                        className="bg-red-500 text-white w-7 h-7 rounded"
-                      >-</button>
-                      <span>{item.qty}</span>
-                      <button
-                        onClick={()=>increaseQty(item.id)}
-                        className="bg-green-500 text-white w-7 h-7 rounded"
-                      >+</button>
-                    </div>
-                  </td>
-
-                  <td className="p-4 text-right">
-                    ₹ {item.price}
-                    {Number(item.discount || 0) > 0 && (
-                      <div className="text-xs text-green-600">
-                        ₹ {(item.price * (1 - Number(item.discount) / 100)).toFixed(2)}
-                      </div>
-                    )}
-                  </td>
-
-                  {/* ⭐ ITEM DISCOUNT INPUT */}
-                  <td className="p-4 text-center">
-                    <input
-                      type="number"
-                      min="0"
-                      max="100"
-                      value={item.discount || ""}
-                      placeholder="0"
-                      onChange={e => updateDiscount(item.id, Number(e.target.value || 0))}
-                      className="border rounded p-1 w-16 text-center text-sm"
-                    />
-                  </td>
-
-                  <td className="p-4 text-right font-semibold">
-                    ₹ {calcRow(item).toFixed(2)}
-                  </td>
-
-                </tr>
-              ))}
-            </tbody>
-
-          </table>
+            ? <div className="p-6 text-center text-gray-400">No items in cart</div>
+            : <table className="min-w-[650px] w-full text-sm">
+                <thead className="bg-slate-100">
+                  <tr>
+                    <th className="p-4 text-left">Item</th>
+                    <th className="p-4 text-center">Qty</th>
+                    <th className="p-4 text-right">Price</th>
+                    <th className="p-4 text-center">Disc%</th>
+                    <th className="p-4 text-right">Total</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {cart.map(item=>(
+                    <tr key={item.id} className="border-t">
+                      <td className="p-4">
+                        {item.name}
+                        {Number(item.discount || 0) > 0 && (
+                          <span className="ml-2 text-xs text-green-600 font-semibold">-{item.discount}%</span>
+                        )}
+                      </td>
+                      <td className="p-4 text-center">
+                        <div className="flex justify-center gap-2">
+                          <button onClick={()=>decreaseQty(item.id)} className="bg-red-500 text-white w-7 h-7 rounded">-</button>
+                          <span>{item.qty}</span>
+                          <button onClick={()=>increaseQty(item.id)} className="bg-green-500 text-white w-7 h-7 rounded">+</button>
+                        </div>
+                      </td>
+                      <td className="p-4 text-right">
+                        ₹ {item.price}
+                        {Number(item.discount || 0) > 0 && (
+                          <div className="text-xs text-green-600">₹ {(item.price * (1 - Number(item.discount) / 100)).toFixed(2)}</div>
+                        )}
+                      </td>
+                      <td className="p-4 text-center">
+                        <input type="number" min="0" max="100" value={item.discount || ""} placeholder="0"
+                          onChange={e => updateDiscount(item.id, Number(e.target.value || 0))}
+                          className="border rounded p-1 w-16 text-center text-sm" />
+                      </td>
+                      <td className="p-4 text-right font-semibold">₹ {calcRow(item).toFixed(2)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
           }
-
         </div>
 
       </div>
@@ -378,31 +301,26 @@ export default function Billing(){
 
           <h2 className="text-2xl font-bold mb-6">Summary</h2>
 
-          <div className="space-y-3 mb-6">
+          {/* ⭐ SHOW SELECTED BRANCH */}
+          {branchId && branches.length > 0 && (
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-2 mb-4 text-sm text-blue-700 font-semibold">
+              🏪 {branches.find(b => b.id === Number(branchId))?.name}
+            </div>
+          )}
 
+          <div className="space-y-3 mb-6">
             <div className="flex justify-between text-lg">
               <span>Sub Total</span>
               <span>₹ {subTotal.toFixed(2)}</span>
             </div>
 
-            {/* ⭐ BILL DISCOUNT */}
             <div className="flex gap-2 items-center">
-              <select
-                value={discountType}
-                onChange={e => setDiscountType(e.target.value)}
-                className="border p-2 rounded-lg text-sm"
-              >
+              <select value={discountType} onChange={e => setDiscountType(e.target.value)} className="border p-2 rounded-lg text-sm">
                 <option value="percent">Discount %</option>
                 <option value="flat">Flat ₹</option>
               </select>
-              <input
-                type="number"
-                min="0"
-                placeholder="0"
-                value={discountValue}
-                onChange={e => setDiscountValue(e.target.value)}
-                className="border p-2 rounded-lg text-sm w-full"
-              />
+              <input type="number" min="0" placeholder="0" value={discountValue}
+                onChange={e => setDiscountValue(e.target.value)} className="border p-2 rounded-lg text-sm w-full" />
             </div>
 
             {billDiscountAmount > 0 && (
@@ -421,35 +339,22 @@ export default function Billing(){
               <span>Total</span>
               <span>₹ {roundedTotal.toFixed(2)}</span>
             </div>
-
           </div>
 
-          <select
-            value={paymentMode}
-            onChange={e=>setPaymentMode(e.target.value)}
-            className="border p-3 w-full rounded-xl mb-4"
-          >
+          <select value={paymentMode} onChange={e=>setPaymentMode(e.target.value)} className="border p-3 w-full rounded-xl mb-4">
             <option value="cash">Cash</option>
             <option value="upi">UPI</option>
           </select>
 
           {paymentMode === "cash" && (
             <>
-              <input
-                placeholder="Amount Received"
-                value={amountReceived}
-                onChange={e=>setAmountReceived(e.target.value)}
-                className="border p-3 w-full rounded-xl mb-2"
-              />
-              <p className="text-right text-sm text-slate-500">
-                Balance: ₹ {balance >= 0 ? balance : 0}
-              </p>
+              <input placeholder="Amount Received" value={amountReceived}
+                onChange={e=>setAmountReceived(e.target.value)} className="border p-3 w-full rounded-xl mb-2" />
+              <p className="text-right text-sm text-slate-500">Balance: ₹ {balance >= 0 ? balance : 0}</p>
             </>
           )}
 
-          <button
-            disabled={loading}
-            onClick={createBill}
+          <button disabled={loading} onClick={createBill}
             className="bg-green-600 text-white p-4 w-full rounded-xl mt-4 font-semibold">
             {loading ? "Creating..." : "Generate Invoice"}
           </button>
