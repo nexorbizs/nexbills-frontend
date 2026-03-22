@@ -1,5 +1,5 @@
 import logo from "../assets/NexBills Logo.png";
-import { LayoutDashboard, ShoppingCart, Package, Users, Receipt, BarChart3, Settings, LogOut, X, Truck, ShoppingBag, Crown, UserCog, Building2, Activity } from "lucide-react"; // ⭐ Activity added here
+import { LayoutDashboard, ShoppingCart, Package, Users, Receipt, BarChart3, Settings, LogOut, X, Truck, ShoppingBag, Crown, UserCog, Building2, Activity } from "lucide-react";
 import { useCartStore } from "../store/cartStore";
 import { useState } from "react";
 
@@ -29,7 +29,7 @@ export default function Sidebar({ setPage, sidebarOpen, setSidebarOpen, role = "
     { name: "Reports",    icon: BarChart3,       key: "reports",   roles: ["OWNER", "MANAGER"] },
     { name: "Suppliers",  icon: Truck,           key: "suppliers", roles: ["OWNER", "MANAGER"] },
     { name: "Purchases",  icon: ShoppingBag,     key: "purchases", roles: ["OWNER", "MANAGER"] },
-    { name: "Activity",   icon: Activity,        key: "activity",  roles: ["OWNER"] }, // ⭐
+    { name: "Activity",   icon: Activity,        key: "activity",  roles: ["OWNER"] },
     { name: "Users",      icon: UserCog,         key: "users",     roles: ["OWNER"] },
     { name: "Branches",   icon: Building2,       key: "branches",  roles: ["OWNER"] },
     { name: "Settings",   icon: Settings,        key: "settings",  roles: ["OWNER"] },
@@ -42,7 +42,7 @@ export default function Sidebar({ setPage, sidebarOpen, setSidebarOpen, role = "
     basic:      "bg-blue-500/20 text-blue-300 border-blue-500/30",
     pro:        "bg-purple-500/20 text-purple-300 border-purple-500/30",
     enterprise: "bg-green-500/20 text-green-300 border-green-500/30",
-    lifetime:   "bg-slate-500/20 text-slate-300 border-slate-500/30" // ⭐ lifetime
+    lifetime:   "bg-slate-500/20 text-slate-300 border-slate-500/30"
   };
   const planColor = planColors[subscription?.plan] || planColors.trial;
 
@@ -51,13 +51,17 @@ export default function Sidebar({ setPage, sidebarOpen, setSidebarOpen, role = "
       {sidebarOpen && (
         <div className="fixed inset-0 bg-black/50 z-40 md:hidden" onClick={() => setSidebarOpen(false)} />
       )}
-      <div className={`fixed md:relative z-50 top-0 left-0 w-72 bg-gradient-to-b from-slate-950 to-slate-900 text-white min-h-screen flex flex-col overflow-y-auto transition-transform duration-300 ${sidebarOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"}`}>
 
-        <div className="md:hidden p-4 flex justify-end">
+      {/* ⭐ Fixed height + overflow-hidden on container, overflow-y-auto only on menu */}
+      <div className={`fixed z-50 top-0 left-0 w-72 h-screen bg-gradient-to-b from-slate-950 to-slate-900 text-white flex flex-col overflow-hidden transition-transform duration-300 md:relative md:translate-x-0 md:h-screen ${sidebarOpen ? "translate-x-0" : "-translate-x-full"}`}>
+
+        {/* CLOSE BUTTON - mobile */}
+        <div className="md:hidden p-4 flex justify-end flex-shrink-0">
           <button onClick={() => setSidebarOpen(false)}><X size={24} /></button>
         </div>
 
-        <div className="p-6 border-b border-slate-800">
+        {/* HEADER - fixed, no scroll */}
+        <div className="p-6 border-b border-slate-800 flex-shrink-0">
           <div className="flex items-center gap-3">
             <img src={logo} alt="NexBills" className="w-10 h-10 rounded-full bg-white p-1" />
             <div>
@@ -88,7 +92,8 @@ export default function Sidebar({ setPage, sidebarOpen, setSidebarOpen, role = "
           )}
         </div>
 
-        <div className="flex-1 px-4 py-6 space-y-2 overflow-y-auto">
+        {/* ⭐ MENU - scrollable independently */}
+        <div className="flex-1 px-4 py-6 space-y-2 overflow-y-auto min-h-0">
           {menu.map(item => {
             const Icon = item.icon;
             const isActive = active === item.key;
@@ -104,7 +109,8 @@ export default function Sidebar({ setPage, sidebarOpen, setSidebarOpen, role = "
           })}
         </div>
 
-        <div className="p-6 border-t border-slate-800">
+        {/* LOGOUT - fixed at bottom */}
+        <div className="p-6 border-t border-slate-800 flex-shrink-0">
           <button onClick={handleLogout} className="w-full flex items-center justify-center gap-2 bg-red-500 hover:bg-red-600 py-3 rounded-xl font-semibold transition">
             <LogOut size={18} /> Logout
           </button>
