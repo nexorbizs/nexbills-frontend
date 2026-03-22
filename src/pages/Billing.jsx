@@ -278,14 +278,14 @@ export default function Billing() {
   /* ================= BILL ================= */
 
   const createBill = async () => {
-    if (cart.length === 0) return alert("Cart empty");
-    if (!customerName.trim()) return alert("Customer required");
-
+    if(cart.length === 0) return alert("Cart empty");
+    if(!customerName.trim()) return alert("Customer required");
+  
     const width = window.confirm("Click OK for 80mm\nClick Cancel for 58mm") ? "80mm" : "58mm";
-
+  
     try {
       setLoading(true);
-
+  
       const res = await API.post("/sales", {
         customerName,
         customerPhone,
@@ -300,23 +300,36 @@ export default function Billing() {
           discount: Number(i.discount || 0)
         }))
       });
-
+  
+      // ⭐ Fetch latest settings to include logo + UPI
+      let setting = {};
+      try {
+        const settingRes = await API.get("/settings");
+        setting = settingRes.data || {};
+      } catch {
+        console.log("settings fetch failed");
+      }
+  
       const saleData = {
         ...res.data.sale,
-        company: JSON.parse(localStorage.getItem("company") || "{}")
+        company: {
+          ...JSON.parse(localStorage.getItem("company") || "{}"),
+          setting  // ⭐ include setting with logoUrl and upiId
+        }
       };
-
+  
       printThermal(saleData, width);
       alert("Invoice Created: " + res.data.sale.invoiceNo);
-
+  
       clearCart();
       setCustomerName("");
       setCustomerPhone("");
       setAmountReceived("");
       setDiscountValue("");
       loadProducts();
-
+  
     } catch (err) {
+      console.log(err.response);
       alert(err.response?.data?.message || "Billing failed");
     } finally {
       setLoading(false);
