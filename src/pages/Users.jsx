@@ -314,8 +314,8 @@ export default function Users() {
             <p className="text-slate-600">Billing, Products, Customers, Sales, Reports — assigned branches only</p>
           </div>
           <div className="bg-green-50 p-3 rounded-lg">
-            <p className="font-semibold text-green-700 mb-1">CASHIER</p>
-            <p className="text-slate-600">Billing only — assigned branches only</p>
+          <p className="font-semibold text-green-700 mb-1">CASHIER</p>
+          <p className="text-slate-600">Billing, Customers — assigned branches only</p>
           </div>
         </div>
       </div>

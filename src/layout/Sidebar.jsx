@@ -21,32 +21,34 @@ export default function Sidebar({ setPage, sidebarOpen, setSidebarOpen, role = "
   };
 
   const allMenu = [
-    { name: "Dashboard", icon: LayoutDashboard, key: "dashboard", roles: ["OWNER", "MANAGER", "CASHIER"] },
-    { name: "Billing", icon: ShoppingCart, key: "billing", roles: ["OWNER", "MANAGER", "CASHIER"] },
-    { name: "Products", icon: Package, key: "products", roles: ["OWNER", "MANAGER"] },
-    { name: "Customers", icon: Users, key: "customers", roles: ["OWNER", "MANAGER"] },
-    { name: "Sales", icon: Receipt, key: "sales", roles: ["OWNER", "MANAGER"] },
-    { name: "Reports", icon: BarChart3, key: "reports", roles: ["OWNER", "MANAGER"] },
-    { name: "Suppliers", icon: Truck, key: "suppliers", roles: ["OWNER", "MANAGER"] },
-    { name: "Purchases", icon: ShoppingBag, key: "purchases", roles: ["OWNER", "MANAGER"] },
-    { name: "Users", icon: UserCog, key: "users", roles: ["OWNER"] },
-    { name: "Settings", icon: Settings, key: "settings", roles: ["OWNER"] },
-    { name: "Branches", icon: Building2, key: "branches", roles: ["OWNER"] },
+    { name: "Dashboard",  icon: LayoutDashboard, key: "dashboard", roles: ["OWNER", "MANAGER", "CASHIER"] },
+    { name: "Billing",    icon: ShoppingCart,    key: "billing",   roles: ["OWNER", "MANAGER", "CASHIER"] },
+    { name: "Customers",  icon: Users,           key: "customers", roles: ["OWNER", "MANAGER", "CASHIER"] }, // ⭐ CASHIER added
+    { name: "Products",   icon: Package,         key: "products",  roles: ["OWNER", "MANAGER"] },
+    { name: "Sales",      icon: Receipt,         key: "sales",     roles: ["OWNER", "MANAGER"] },
+    { name: "Reports",    icon: BarChart3,       key: "reports",   roles: ["OWNER", "MANAGER"] },
+    { name: "Suppliers",  icon: Truck,           key: "suppliers", roles: ["OWNER", "MANAGER"] },
+    { name: "Purchases",  icon: ShoppingBag,     key: "purchases", roles: ["OWNER", "MANAGER"] },
+    { name: "Users",      icon: UserCog,         key: "users",     roles: ["OWNER"] },
+    { name: "Branches",   icon: Building2,       key: "branches",  roles: ["OWNER"] },
+    { name: "Settings",   icon: Settings,        key: "settings",  roles: ["OWNER"] },
   ];
 
   const menu = allMenu.filter(item => item.roles.includes(role));
 
   const planColors = {
-    trial: "bg-yellow-500/20 text-yellow-300 border-yellow-500/30",
-    basic: "bg-blue-500/20 text-blue-300 border-blue-500/30",
-    pro: "bg-purple-500/20 text-purple-300 border-purple-500/30",
+    trial:      "bg-yellow-500/20 text-yellow-300 border-yellow-500/30",
+    basic:      "bg-blue-500/20 text-blue-300 border-blue-500/30",
+    pro:        "bg-purple-500/20 text-purple-300 border-purple-500/30",
     enterprise: "bg-green-500/20 text-green-300 border-green-500/30"
   };
   const planColor = planColors[subscription?.plan] || planColors.trial;
 
   return (
     <>
-      {sidebarOpen && <div className="fixed inset-0 bg-black/50 z-40 md:hidden" onClick={() => setSidebarOpen(false)} />}
+      {sidebarOpen && (
+        <div className="fixed inset-0 bg-black/50 z-40 md:hidden" onClick={() => setSidebarOpen(false)} />
+      )}
       <div className={`fixed md:relative z-50 top-0 left-0 w-72 bg-gradient-to-b from-slate-950 to-slate-900 text-white min-h-screen flex flex-col overflow-y-auto transition-transform duration-300 ${sidebarOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"}`}>
 
         <div className="md:hidden p-4 flex justify-end">
@@ -96,9 +98,10 @@ export default function Sidebar({ setPage, sidebarOpen, setSidebarOpen, role = "
 
         <div className="p-6 border-t border-slate-800">
           <button onClick={handleLogout} className="w-full flex items-center justify-center gap-2 bg-red-500 hover:bg-red-600 py-3 rounded-xl font-semibold transition">
-            <LogOut size={18} />Logout
+            <LogOut size={18} /> Logout
           </button>
         </div>
+
       </div>
     </>
   );
