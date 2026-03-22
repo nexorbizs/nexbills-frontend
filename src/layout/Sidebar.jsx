@@ -1,5 +1,5 @@
 import logo from "../assets/NexBills Logo.png";
-import { LayoutDashboard, ShoppingCart, Package, Users, Receipt, BarChart3, Settings, LogOut, X, Truck, ShoppingBag, Crown, UserCog, Building2 } from "lucide-react";
+import { LayoutDashboard, ShoppingCart, Package, Users, Receipt, BarChart3, Settings, LogOut, X, Truck, ShoppingBag, Crown, UserCog, Building2, Activity } from "lucide-react"; // ⭐ Activity added here
 import { useCartStore } from "../store/cartStore";
 import { useState } from "react";
 
@@ -23,12 +23,13 @@ export default function Sidebar({ setPage, sidebarOpen, setSidebarOpen, role = "
   const allMenu = [
     { name: "Dashboard",  icon: LayoutDashboard, key: "dashboard", roles: ["OWNER", "MANAGER", "CASHIER"] },
     { name: "Billing",    icon: ShoppingCart,    key: "billing",   roles: ["OWNER", "MANAGER", "CASHIER"] },
-    { name: "Customers",  icon: Users,           key: "customers", roles: ["OWNER", "MANAGER", "CASHIER"] }, // ⭐ CASHIER added
+    { name: "Customers",  icon: Users,           key: "customers", roles: ["OWNER", "MANAGER", "CASHIER"] },
     { name: "Products",   icon: Package,         key: "products",  roles: ["OWNER", "MANAGER"] },
     { name: "Sales",      icon: Receipt,         key: "sales",     roles: ["OWNER", "MANAGER"] },
     { name: "Reports",    icon: BarChart3,       key: "reports",   roles: ["OWNER", "MANAGER"] },
     { name: "Suppliers",  icon: Truck,           key: "suppliers", roles: ["OWNER", "MANAGER"] },
     { name: "Purchases",  icon: ShoppingBag,     key: "purchases", roles: ["OWNER", "MANAGER"] },
+    { name: "Activity",   icon: Activity,        key: "activity",  roles: ["OWNER"] }, // ⭐
     { name: "Users",      icon: UserCog,         key: "users",     roles: ["OWNER"] },
     { name: "Branches",   icon: Building2,       key: "branches",  roles: ["OWNER"] },
     { name: "Settings",   icon: Settings,        key: "settings",  roles: ["OWNER"] },
@@ -40,7 +41,8 @@ export default function Sidebar({ setPage, sidebarOpen, setSidebarOpen, role = "
     trial:      "bg-yellow-500/20 text-yellow-300 border-yellow-500/30",
     basic:      "bg-blue-500/20 text-blue-300 border-blue-500/30",
     pro:        "bg-purple-500/20 text-purple-300 border-purple-500/30",
-    enterprise: "bg-green-500/20 text-green-300 border-green-500/30"
+    enterprise: "bg-green-500/20 text-green-300 border-green-500/30",
+    lifetime:   "bg-slate-500/20 text-slate-300 border-slate-500/30" // ⭐ lifetime
   };
   const planColor = planColors[subscription?.plan] || planColors.trial;
 
@@ -70,10 +72,16 @@ export default function Sidebar({ setPage, sidebarOpen, setSidebarOpen, role = "
             <div className={`mt-3 flex items-center gap-2 px-3 py-2 rounded-lg border text-xs font-semibold ${planColor}`}>
               <Crown size={12} />
               <span>{subscription.plan?.toUpperCase()} PLAN</span>
-              <span className="ml-auto">{subscription.daysLeft > 0 ? `${subscription.daysLeft}d left` : "Expired"}</span>
+              <span className="ml-auto">
+                {subscription.plan === "lifetime"
+                  ? "♾️ Permanent"
+                  : subscription.daysLeft > 0
+                    ? `${subscription.daysLeft}d left`
+                    : "Expired"}
+              </span>
             </div>
           )}
-          {subscription?.daysLeft <= 7 && subscription?.daysLeft > 0 && (
+          {subscription?.plan !== "lifetime" && subscription?.daysLeft <= 7 && subscription?.daysLeft > 0 && (
             <div className="mt-2 bg-red-500/20 border border-red-500/30 rounded-lg px-3 py-2 text-xs text-red-300">
               ⚠️ Subscription expiring soon!
             </div>

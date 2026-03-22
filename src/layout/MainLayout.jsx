@@ -12,6 +12,7 @@ import Suppliers from "../pages/Suppliers";
 import Purchases from "../pages/Purchases";
 import Users from "../pages/Users";
 import Branches from "../pages/Branches";
+import Activity from "../pages/Activity";
 
 export default function MainLayout() {
   const [page, setPage] = useState("dashboard");
@@ -33,6 +34,7 @@ export default function MainLayout() {
       case "users":     return role === "OWNER" ? <Users /> : <Dashboard />;
       case "settings":  return role === "OWNER" ? <Settings /> : <Dashboard />;
       case "branches":  return role === "OWNER" ? <Branches /> : <Dashboard />;
+      case "activity": return role === "OWNER" ? <Activity /> : <Dashboard />;
       default:          return <Dashboard />;
     }
   };
