@@ -54,11 +54,11 @@ export default function Settings() {
     if (!file) return;
     if (file.size > 2 * 1024 * 1024)
       return alert("Image must be under 2MB");
-
+  
     const formData = new FormData();
     formData.append("file", file);
     formData.append("upload_preset", UPLOAD_PRESET);
-
+  
     try {
       setUploading(true);
       const res = await fetch(
@@ -67,8 +67,20 @@ export default function Settings() {
       );
       const data = await res.json();
       if (data.secure_url) {
-        setForm(prev => ({ ...prev, logoUrl: data.secure_url }));
-        alert("Logo uploaded successfully ✅");
+        const newForm = { ...form, logoUrl: data.secure_url };
+        setForm(newForm);
+  
+        // ⭐ Auto-save immediately after upload
+        await API.post("/settings", {
+          shopName:  form.shopName.trim(),
+          gstNumber: form.gstNumber.trim().toUpperCase(),
+          phone:     form.phone.trim(),
+          address:   form.address.trim(),
+          upiId:     form.upiId.trim(),
+          logoUrl:   data.secure_url  // ⭐ use fresh URL directly
+        });
+  
+        alert("Logo uploaded and saved ✅");
       } else {
         alert("Upload failed. Try again.");
       }
