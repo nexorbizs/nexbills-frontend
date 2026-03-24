@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import API from "../api";
-import FeatureGate from "../components/FeatureGate";
+import FeatureGate from "../ccomponents/FeatureGate";
 
 export default function Purchases() {
 
@@ -384,6 +384,6 @@ export default function Purchases() {
       </div>
 
     </div>
-    </FeatureGate>
+    </FeatureGate>  
   );
 }
