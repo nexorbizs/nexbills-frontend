@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import API from "../api";
+import FeatureGate from "../components/FeatureGate";
 
 export default function Purchases() {
 
@@ -166,6 +167,7 @@ export default function Purchases() {
   if (loading) return <div className="p-6">Loading Purchases...</div>;
 
   return (
+    <FeatureGate feature="purchase_management">
     <div>
 
       <h1 className="text-2xl md:text-3xl font-bold mb-6">Purchase Module</h1>
@@ -382,5 +384,6 @@ export default function Purchases() {
       </div>
 
     </div>
+    </FeatureGate>
   );
 }
