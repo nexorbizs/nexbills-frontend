@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import API from "../api";
+import FeatureGate from "../components/FeatureGate";
 
 export default function Branches() {
 
@@ -69,6 +70,7 @@ export default function Branches() {
   if (loading) return <div className="p-6">Loading Branches...</div>;
 
   return (
+    <FeatureGate feature="purchase_management">
     <div>
 
       <h1 className="text-2xl md:text-3xl font-bold mb-6">Branch Management</h1>
@@ -218,5 +220,6 @@ export default function Branches() {
       </div>
 
     </div>
+    </FeatureGate>
   );
 }

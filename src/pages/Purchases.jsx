@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import API from "../api";
-import FeatureGate from "../ccomponents/FeatureGate";
+import FeatureGate from "../components/FeatureGate";
 
 export default function Purchases() {
 

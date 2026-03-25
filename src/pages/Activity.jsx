@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import API from "../api";
+import FeatureGate from "../components/FeatureGate";
 
 const MODULE_COLORS = {
   SALE:     "bg-green-100 text-green-700",
@@ -75,6 +76,7 @@ export default function Activity() {
   };
 
   return (
+    <FeatureGate feature="activity_log"> 
     <div>
       <h1 className="text-2xl md:text-3xl font-bold mb-6">Activity Log 📋</h1>
 
@@ -215,5 +217,6 @@ export default function Activity() {
         )}
       </div>
     </div>
+    </FeatureGate>
   );
 }

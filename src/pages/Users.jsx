@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import API from "../api";
+import FeatureGate from "../components/FeatureGate";
 
 export default function Users() {
   const [users, setUsers] = useState([]);
@@ -121,6 +122,7 @@ export default function Users() {
   if (loading) return <div className="p-6">Loading Users...</div>;
 
   return (
+    <FeatureGate feature="staff_role_management">
     <div>
       <h1 className="text-2xl md:text-3xl font-bold mb-6">User Management</h1>
 
@@ -320,5 +322,6 @@ export default function Users() {
         </div>
       </div>
     </div>
+    </FeatureGate>
   );
 }

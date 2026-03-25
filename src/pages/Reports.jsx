@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import API from "../api";
 import * as XLSX from "xlsx";
 import { saveAs } from "file-saver";
+import FeatureGate from "../components/FeatureGate";
 
 export default function Reports() {
 
@@ -198,14 +199,18 @@ export default function Reports() {
       </div>
 
       {/* GST DOWNLOAD */}
+      {/* GST DOWNLOAD */}
+      <FeatureGate feature="reports">
       <h2 className="text-xl font-bold mb-4">GST Reports</h2>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
         <DownloadCard title="Last 24 Hours" onClick={() => downloadReport(1)} color="blue" />
         <DownloadCard title="Last 7 Days" onClick={() => downloadReport(7)} color="green" />
         <DownloadCard title="Last 30 Days" onClick={() => downloadReport(30)} color="purple" />
       </div>
+      </FeatureGate>
 
       {/* P&L REPORT */}
+      <FeatureGate feature="profit_loss_report">
       <div className="bg-white rounded-xl shadow p-6">
 
         <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
@@ -316,7 +321,7 @@ export default function Reports() {
         ) : null}
 
       </div>
-
+      </FeatureGate>
     </div>
   );
 }
