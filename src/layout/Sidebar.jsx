@@ -37,6 +37,7 @@ export default function Sidebar({ setPage, sidebarOpen, setSidebarOpen, role = "
           maxUsers: fresh.features?.maxUsers,
           maxBranches: fresh.features?.maxBranches,
           daysLeft: subscription?.daysLeft ?? null,
+          features: fresh.features,
         };
 
         localStorage.setItem("subscription", JSON.stringify(updated));
@@ -49,7 +50,8 @@ export default function Sidebar({ setPage, sidebarOpen, setSidebarOpen, role = "
   }, []);
 
   const plan = subscription?.plan || "basic";
-  const access = PLAN_FEATURES[plan] || PLAN_FEATURES["basic"];
+  const savedFeatures = subscription?.features;
+  const access = savedFeatures || PLAN_FEATURES[plan] || PLAN_FEATURES["basic"];
 
   const handleLogout = () => {
     clearCart();
