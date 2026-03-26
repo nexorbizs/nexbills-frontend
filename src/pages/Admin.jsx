@@ -449,8 +449,8 @@ export default function Admin() {
                       </span>
                     ) : "—"}
                   </td>
-                  <td className="p-3 text-center text-slate-600">{c.userCount ?? "—"}</td>
-                  <td className="p-3 text-center text-slate-600">{c.branchCount ?? "—"}</td>
+                  <td className="p-3 text-center text-slate-600">{c.userCount ?? "—"} / {c.subscription?.maxUsers ?? "—"}</td>
+                  <td className="p-3 text-center text-slate-600">{c.branchCount ?? "—"} / {c.subscription?.maxBranches ?? "—"}</td>
                   <td className="p-3 text-center text-slate-600">{c.salesCount ?? "—"}</td>
                   <td className="p-3 text-center text-slate-400 text-xs max-w-[120px] truncate">
                     {c.subscription?.notes || "—"}
