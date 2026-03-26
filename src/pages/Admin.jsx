@@ -84,7 +84,7 @@ export default function Admin() {
     try {
       await API.post("/subscriptions/set", { ...form, secret });
       alert("Subscription updated!");
-      loadCompanies();
+      await loadCompanies();
     } catch (err) {
       alert(err.response?.data?.error || "Failed");
     }
@@ -97,7 +97,7 @@ export default function Admin() {
     try {
       await API.post("/subscriptions/suspend", { companyId, secret });
       alert("Suspended!");
-      loadCompanies();
+      await loadCompanies();
     } catch (err) {
       alert(err.response?.data?.error || "Failed");
     }
@@ -110,7 +110,7 @@ export default function Admin() {
     try {
       await API.post("/subscriptions/unsuspend", { companyId, secret });
       alert("Reactivated!");
-      loadCompanies();
+      await loadCompanies();
     } catch (err) {
       alert(err.response?.data?.error || "Failed");
     }
@@ -123,7 +123,7 @@ export default function Admin() {
     try {
       await API.post("/subscriptions/extend", { companyId, days, secret });
       alert(`Extended by ${days} days!`);
-      loadCompanies();
+      await loadCompanies();
     } catch (err) {
       alert(err.response?.data?.error || "Failed");
     }
