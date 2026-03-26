@@ -1,8 +1,9 @@
 import logo from "../assets/NexBills Logo.png";
 import { LayoutDashboard, ShoppingCart, Package, Users, Receipt, BarChart3, Settings, LogOut, X, Truck, ShoppingBag, Crown, UserCog, Building2, Activity, Lock } from "lucide-react";
 import { useCartStore } from "../store/cartStore";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import toast from "react-hot-toast";
+import API from "../api";
 
 const PLAN_FEATURES = {
   trial:      { purchases: true,  suppliers: true,  branches: true,  reports: true,  activity: true,  staffUsers: true },
@@ -15,10 +16,37 @@ const PLAN_FEATURES = {
 export default function Sidebar({ setPage, sidebarOpen, setSidebarOpen, role = "OWNER" }) {
 
   const company = JSON.parse(localStorage.getItem("company") || "{}");
-  const subscription = JSON.parse(localStorage.getItem("subscription") || "null");
   const user = JSON.parse(localStorage.getItem("user") || "{}");
   const { clearCart } = useCartStore();
   const [active, setActive] = useState("dashboard");
+
+  const [subscription, setSubscription] = useState(
+    JSON.parse(localStorage.getItem("subscription") || "null")
+  );
+
+  // ⭐ Always fetch fresh plan from backend on load
+  useEffect(() => {
+    const fetchPlan = async () => {
+      try {
+        const res = await API.get("/subscriptions/my-plan");
+        const fresh = res.data;
+
+        const updated = {
+          plan: fresh.plan,
+          status: fresh.status,
+          maxUsers: fresh.features?.maxUsers,
+          maxBranches: fresh.features?.maxBranches,
+          daysLeft: subscription?.daysLeft ?? null,
+        };
+
+        localStorage.setItem("subscription", JSON.stringify(updated));
+        setSubscription(updated);
+      } catch (err) {
+        console.error("Failed to fetch plan", err);
+      }
+    };
+    fetchPlan();
+  }, []);
 
   const plan = subscription?.plan || "basic";
   const access = PLAN_FEATURES[plan] || PLAN_FEATURES["basic"];
