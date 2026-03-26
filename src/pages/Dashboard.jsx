@@ -65,6 +65,7 @@ export default function Dashboard() {
     selectedBranch !== "all" ? `&branchId=${selectedBranch}${extra}` : extra;
 
   const loadPies = async () => {
+  try {
     const now = new Date().toISOString();
     const todayFrom = startOfDay(1);
     const weekFrom = startOfDay(7);
@@ -77,6 +78,9 @@ export default function Dashboard() {
     setTodayPie(makePie(todayRes.data.sales));
     setWeekPie(makePie(weekRes.data.sales));
     setMonthPie(makePie(monthRes.data.sales));
+  } catch {
+    // reports not available in this plan — silently skip
+  }
   };
 
   const loadDashboard = async () => {
@@ -87,7 +91,7 @@ export default function Dashboard() {
 
       const [summaryRes, branchRes] = await Promise.all([
         API.get("/reports/dashboard"),
-        API.get("/branches"),
+        API.get("/branches").catch(() => ({ data: [] })),
       ]);
 
       setStats(summaryRes.data);
@@ -102,7 +106,7 @@ export default function Dashboard() {
 
       const branchResults = await Promise.all(
         filteredBranches.map(async (b) => {
-          const res = await API.get(`/reports/sales?from=${weekFrom}&to=${now}&branchId=${b.id}`);
+          const res = await API.get(`/reports/sales?from=${weekFrom}&to=${now}&branchId=${b.id}`).catch(() => ({ data: { sales: [] } }));
           const sales = res.data.sales || [];
           let revenue = 0, productsSold = 0;
           const customers = new Set();
