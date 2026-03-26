@@ -1,13 +1,32 @@
 import { useState } from "react";
 import API from "../api";
 
-// ⭐ Plan days mapping
 const planDays = {
   trial: 7,
   basic: 30,
   pro: 180,
   enterprise: 365,
   lifetime: 36500
+};
+
+// ⭐ NEW
+const FEATURE_LABELS = {
+  purchase_management: "Purchase Management",
+  supplier_management: "Supplier Management",
+  multi_branch: "Multi-Branch Dashboard",
+  reports: "Sales & Purchase Reports",
+  profit_loss_report: "Profit & Loss Report",
+  activity_log: "Activity Log",
+  staff_role_management: "Staff Role Management",
+};
+
+// ⭐ NEW — base plan defaults (mirror of planFeatures.js)
+const PLAN_FEATURES = {
+  trial:      { purchase_management: false, supplier_management: false, multi_branch: false, reports: false, profit_loss_report: false, activity_log: false, staff_role_management: false },
+  basic:      { purchase_management: false, supplier_management: false, multi_branch: false, reports: false, profit_loss_report: false, activity_log: false, staff_role_management: false },
+  pro:        { purchase_management: false, supplier_management: false, multi_branch: true,  reports: true,  profit_loss_report: true,  activity_log: true,  staff_role_management: true  },
+  enterprise: { purchase_management: true,  supplier_management: true,  multi_branch: true,  reports: true,  profit_loss_report: true,  activity_log: true,  staff_role_management: true  },
+  lifetime:   { purchase_management: true,  supplier_management: true,  multi_branch: true,  reports: true,  profit_loss_report: true,  activity_log: true,  staff_role_management: true  },
 };
 
 export default function Admin() {
@@ -25,6 +44,11 @@ export default function Admin() {
     maxBranches: "1",
     notes: ""
   });
+
+  // ⭐ NEW state for feature control
+  const [featureCompanyId, setFeatureCompanyId] = useState("");
+  const [featureOverrides, setFeatureOverrides] = useState({});
+  const [featureSaving, setFeatureSaving] = useState(false);
 
   /* ================= VERIFY ================= */
 
@@ -105,6 +129,37 @@ export default function Admin() {
     }
   };
 
+  // ⭐ NEW — load company's current features when selected
+  const loadCompanyFeatures = (companyId) => {
+    setFeatureCompanyId(companyId);
+    if (!companyId) { setFeatureOverrides({}); return; }
+    const company = companies.find(c => c.id === Number(companyId));
+    if (!company) return;
+    const plan = company.subscription?.plan || "basic";
+    const base = PLAN_FEATURES[plan] || PLAN_FEATURES["basic"];
+    const dbOverrides = company.subscription?.features || {};
+    setFeatureOverrides({ ...base, ...dbOverrides });
+  };
+
+  // ⭐ NEW — save feature overrides to DB
+  const saveFeatures = async () => {
+    if (!featureCompanyId) return alert("Select a company");
+    setFeatureSaving(true);
+    try {
+      await API.post("/subscriptions/set-features", {
+        companyId: featureCompanyId,
+        features: featureOverrides,
+        secret,
+      });
+      alert("Features updated!");
+      loadCompanies();
+    } catch (err) {
+      alert(err.response?.data?.error || "Failed");
+    } finally {
+      setFeatureSaving(false);
+    }
+  };
+
   /* ================= HELPERS ================= */
 
   const statusColor = (status) => {
@@ -124,7 +179,7 @@ export default function Admin() {
 
   const rowBg = (c) => {
     if (c.subscription?.status === "suspended") return "bg-orange-50";
-    if (c.subscription?.plan === "lifetime") return ""; // ⭐ never highlight lifetime
+    if (c.subscription?.plan === "lifetime") return "";
     if (c.daysLeft !== null && c.daysLeft <= 0) return "bg-red-100";
     if (c.daysLeft !== null && c.daysLeft <= 7) return "bg-red-50";
     return "";
@@ -209,7 +264,6 @@ export default function Admin() {
         <div className="bg-white rounded-xl shadow p-6 mb-6">
           <h2 className="text-lg font-bold mb-4">Set / Renew Subscription</h2>
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
-
             <div className="col-span-2 flex flex-col gap-1">
               <label className="text-xs font-semibold text-slate-500">Company</label>
               <select value={form.companyId}
@@ -221,16 +275,10 @@ export default function Admin() {
                 ))}
               </select>
             </div>
-
-            {/* ⭐ Plan auto-fills days */}
             <div className="flex flex-col gap-1">
               <label className="text-xs font-semibold text-slate-500">Plan</label>
               <select value={form.plan}
-                onChange={e => setForm({
-                  ...form,
-                  plan: e.target.value,
-                  days: planDays[e.target.value] || 30
-                })}
+                onChange={e => setForm({ ...form, plan: e.target.value, days: planDays[e.target.value] || 30 })}
                 className="border p-3 rounded-lg text-sm">
                 <option value="trial">Trial (7 days)</option>
                 <option value="basic">Basic (30 days)</option>
@@ -239,8 +287,6 @@ export default function Admin() {
                 <option value="lifetime">Lifetime ♾️ (Permanent)</option>
               </select>
             </div>
-
-            {/* ⭐ Days auto-filled but still editable */}
             <div className="flex flex-col gap-1">
               <label className="text-xs font-semibold text-slate-500">
                 Days {form.plan === "lifetime" ? "(Permanent)" : "(auto-filled)"}
@@ -251,23 +297,19 @@ export default function Admin() {
                 className={`border p-3 rounded-lg text-sm ${form.plan === "lifetime" ? "bg-slate-100 text-slate-400 cursor-not-allowed" : "bg-white"}`}
               />
             </div>
-
             <div className="flex flex-col gap-1">
               <label className="text-xs font-semibold text-slate-500">Max Users</label>
               <input type="number" placeholder="e.g. 5" value={form.maxUsers}
                 onChange={e => setForm({ ...form, maxUsers: e.target.value })}
                 className="border p-3 rounded-lg text-sm" />
             </div>
-
             <div className="flex flex-col gap-1">
               <label className="text-xs font-semibold text-slate-500">Max Branches</label>
               <input type="number" placeholder="e.g. 2" value={form.maxBranches}
                 onChange={e => setForm({ ...form, maxBranches: e.target.value })}
                 className="border p-3 rounded-lg text-sm" />
             </div>
-
           </div>
-
           <div className="flex gap-3 mt-3">
             <div className="flex flex-col gap-1 flex-1">
               <label className="text-xs font-semibold text-slate-500">Notes (optional)</label>
@@ -284,6 +326,60 @@ export default function Admin() {
           </div>
         </div>
 
+        {/* ⭐ NEW — FEATURE CONTROL */}
+        <div className="bg-white rounded-xl shadow p-6 mb-6">
+          <h2 className="text-lg font-bold mb-4">Feature Control</h2>
+
+          <div className="mb-4">
+            <label className="text-xs font-semibold text-slate-500 block mb-1">Select Company</label>
+            <select
+              className="border p-3 rounded-lg text-sm w-full max-w-sm"
+              value={featureCompanyId}
+              onChange={e => loadCompanyFeatures(e.target.value)}
+            >
+              <option value="">-- Select Company --</option>
+              {companies.map(c => (
+                <option key={c.id} value={c.id}>
+                  {c.name} — {c.subscription?.plan || "no plan"}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {featureCompanyId && (
+            <>
+              <p className="text-xs text-slate-400 mb-3">
+                Click any feature to toggle ON / OFF. Changes are saved when you click Save.
+              </p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 mb-4">
+                {Object.entries(FEATURE_LABELS).map(([key, label]) => (
+                  <div
+                    key={key}
+                    onClick={() => setFeatureOverrides(prev => ({ ...prev, [key]: !prev[key] }))}
+                    className={`flex items-center justify-between p-3 rounded-lg border cursor-pointer transition select-none ${
+                      featureOverrides[key]
+                        ? "bg-green-50 border-green-400"
+                        : "bg-red-50 border-red-300"
+                    }`}
+                  >
+                    <span className="text-sm font-medium text-slate-700">{label}</span>
+                    <span className={`text-xs font-bold ${featureOverrides[key] ? "text-green-600" : "text-red-500"}`}>
+                      {featureOverrides[key] ? "ON ✓" : "OFF ✗"}
+                    </span>
+                  </div>
+                ))}
+              </div>
+              <button
+                onClick={saveFeatures}
+                disabled={featureSaving}
+                className="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-3 rounded-lg font-semibold"
+              >
+                {featureSaving ? "Saving..." : "Save Features"}
+              </button>
+            </>
+          )}
+        </div>
+
         {/* COMPANIES TABLE */}
         <div className="bg-white rounded-xl shadow overflow-x-auto">
           <div className="p-4 border-b flex items-center justify-between">
@@ -293,7 +389,6 @@ export default function Admin() {
               Refresh
             </button>
           </div>
-
           <table className="w-full min-w-[1100px] text-sm">
             <thead className="bg-slate-100">
               <tr>
@@ -341,8 +436,6 @@ export default function Admin() {
                         ? new Date(c.subscription.expiryDate).toLocaleDateString("en-IN")
                         : "—"}
                   </td>
-
-                  {/* ⭐ DAYS LEFT */}
                   <td className="p-3 text-center">
                     {c.subscription?.plan === "lifetime" ? (
                       <span className="font-semibold text-xs text-slate-700">♾️</span>
@@ -356,17 +449,14 @@ export default function Admin() {
                       </span>
                     ) : "—"}
                   </td>
-
                   <td className="p-3 text-center text-slate-600">{c.userCount ?? "—"}</td>
                   <td className="p-3 text-center text-slate-600">{c.branchCount ?? "—"}</td>
                   <td className="p-3 text-center text-slate-600">{c.salesCount ?? "—"}</td>
                   <td className="p-3 text-center text-slate-400 text-xs max-w-[120px] truncate">
                     {c.subscription?.notes || "—"}
                   </td>
-
                   <td className="p-3 text-center">
                     <div className="flex justify-center gap-1 flex-wrap">
-                      {/* ⭐ Hide extend for lifetime */}
                       {c.subscription && c.subscription.plan !== "lifetime" && (
                         <>
                           <button onClick={() => extendDays(c.id, 30)}
