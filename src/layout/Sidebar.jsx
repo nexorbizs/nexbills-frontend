@@ -68,12 +68,12 @@ export default function Sidebar({ setPage, sidebarOpen, setSidebarOpen, role = "
     { name: "Customers",  icon: Users,           key: "customers", roles: ["OWNER", "MANAGER", "CASHIER"], feature: null },
     { name: "Products",   icon: Package,         key: "products",  roles: ["OWNER", "MANAGER"],            feature: null },
     { name: "Sales",      icon: Receipt,         key: "sales",     roles: ["OWNER", "MANAGER"],            feature: null },
-    { name: "Reports",    icon: BarChart3,       key: "reports",   roles: ["OWNER", "MANAGER"],            feature: "reports" },
-    { name: "Suppliers",  icon: Truck,           key: "suppliers", roles: ["OWNER", "MANAGER"],            feature: "suppliers" },
-    { name: "Purchases",  icon: ShoppingBag,     key: "purchases", roles: ["OWNER", "MANAGER"],            feature: "purchases" },
-    { name: "Activity",   icon: Activity,        key: "activity",  roles: ["OWNER"],                       feature: "activity" },
-    { name: "Users",      icon: UserCog,         key: "users",     roles: ["OWNER"],                       feature: "staffUsers" },
-    { name: "Branches",   icon: Building2,       key: "branches",  roles: ["OWNER"],                       feature: "branches" },
+    { name: "Reports",    icon: BarChart3,  key: "reports",   roles: ["OWNER", "MANAGER"], feature: "reports" },
+    { name: "Suppliers",  icon: Truck,      key: "suppliers", roles: ["OWNER", "MANAGER"], feature: "supplier_management" },
+    { name: "Purchases",  icon: ShoppingBag,key: "purchases", roles: ["OWNER", "MANAGER"], feature: "purchase_management" },
+    { name: "Activity",   icon: Activity,   key: "activity",  roles: ["OWNER"],            feature: "activity_log" },
+    { name: "Users",      icon: UserCog,    key: "users",     roles: ["OWNER"],            feature: "staff_role_management" },
+    { name: "Branches",   icon: Building2,  key: "branches",  roles: ["OWNER"],            feature: "multi_branch" },
     { name: "Settings",   icon: Settings,        key: "settings",  roles: ["OWNER"],                       feature: null },
   ];
 
