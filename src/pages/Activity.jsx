@@ -61,7 +61,7 @@ export default function Activity() {
       const res = await API.get(`/activity?${params.toString()}`);
       setLogs(res.data || []);
     } catch {
-      alert("Failed to load activity logs");
+      console.error("Failed to load activity logs");
     } finally {
       setLoading(false);
     }

@@ -24,7 +24,7 @@ export default function Suppliers() {
       const res = await API.get("/suppliers");
       setSuppliers(res.data || []);
     } catch {
-      alert("Failed to load suppliers");
+      console.error("Failed to load suppliers");
     } finally {
       setLoading(false);
     }

@@ -41,7 +41,7 @@ export default function Purchases() {
       setSuppliers(supRes.data || []);
       setProducts(proRes.data || []);
     } catch {
-      alert("Failed to load data");
+      console.error("Failed to load data");
     } finally {
       setLoading(false);
     }

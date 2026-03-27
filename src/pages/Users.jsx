@@ -31,7 +31,7 @@ export default function Users() {
       setUsers(usersRes.data || []);
       setBranches(branchRes.data || []);
     } catch {
-      alert("Failed to load data");
+      console.error("Failed to load data");
     } finally {
       setLoading(false);
     }

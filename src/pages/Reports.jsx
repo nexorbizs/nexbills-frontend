@@ -46,7 +46,7 @@ export default function Reports() {
       setPl(res.data);
       setPlDays(days);
     } catch {
-      alert("P&L load failed");
+      console.error("P&L load failed");
     } finally {
       setPlLoading(false);
     }

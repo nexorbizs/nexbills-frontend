@@ -24,7 +24,7 @@ export default function Branches() {
       setBranches(branchRes.data || []);
       setStats(statsRes.data || []);
     } catch {
-      alert("Failed to load branches");
+      console.error("Failed to load branches");
     } finally {
       setLoading(false);
     }
