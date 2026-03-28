@@ -42,7 +42,7 @@ export default function MainLayout() {
   };
 
   return (
-    <div className="flex bg-slate-100 min-h-screen relative">
+    <div className="flex bg-slate-100 relative overflow-hidden" style={{ height: '100dvh' }}>
       <Sidebar setPage={(p) => { setPage(p); setSidebarOpen(false); }}
         sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} role={role} />
       <div className="flex-1 flex flex-col w-full">
