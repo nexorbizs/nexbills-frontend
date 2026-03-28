@@ -13,6 +13,7 @@ import Purchases from "../pages/Purchases";
 import Users from "../pages/Users";
 import Branches from "../pages/Branches";
 import Activity from "../pages/Activity";
+import Support from "../pages/Support";
 
 export default function MainLayout() {
   const [page, setPage] = useState("dashboard");
@@ -35,6 +36,7 @@ export default function MainLayout() {
       case "settings":  return role === "OWNER" ? <Settings /> : <Dashboard />;
       case "branches":  return role === "OWNER" ? <Branches /> : <Dashboard />;
       case "activity": return role === "OWNER" ? <Activity /> : <Dashboard />;
+      case "support": return <Support />;
       default:          return <Dashboard />;
     }
   };
@@ -55,7 +57,7 @@ export default function MainLayout() {
           </div>
           <div className="text-xs md:text-sm text-slate-500">GST Billing System</div>
         </div>
-        <div className="flex-1 overflow-auto p-3 sm:p-4 md:p-6 lg:p-8 max-w-[1600px] mx-auto w-full">
+        <div className="flex-1 overflow-y-auto p-3 sm:p-4 md:p-6 lg:p-8 max-w-[1600px] mx-auto w-full">
           {renderPage()}
         </div>
       </div>

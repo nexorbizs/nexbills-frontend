@@ -1,9 +1,10 @@
 import logo from "../assets/NexBills Logo.png";
-import { LayoutDashboard, ShoppingCart, Package, Users, Receipt, BarChart3, Settings, LogOut, X, Truck, ShoppingBag, Crown, UserCog, Building2, Activity, Lock } from "lucide-react";
+import { LayoutDashboard, ShoppingCart, Package, Users, Receipt, BarChart3, Settings, LogOut, X, Truck, ShoppingBag, Crown, UserCog, Building2, Activity, Lock, Headphones } from "lucide-react";
 import { useCartStore } from "../store/cartStore";
 import { useState, useEffect } from "react";
 import toast from "react-hot-toast";
 import API from "../api";
+
 
 const PLAN_FEATURES = {
   trial:      { purchases: true,  suppliers: true,  branches: true,  reports: true,  activity: true,  staffUsers: true },
@@ -75,6 +76,7 @@ export default function Sidebar({ setPage, sidebarOpen, setSidebarOpen, role = "
     { name: "Users",      icon: UserCog,    key: "users",     roles: ["OWNER"],            feature: "staff_role_management" },
     { name: "Branches",   icon: Building2,  key: "branches",  roles: ["OWNER"],            feature: "multi_branch" },
     { name: "Settings",   icon: Settings,        key: "settings",  roles: ["OWNER"],                       feature: null },
+    { name: "Support", icon: Headphones, key: "support", roles: ["OWNER", "MANAGER", "CASHIER"], feature: null },
   ];
 
   const menu = allMenu.filter(item => item.roles.includes(role));
@@ -108,7 +110,7 @@ export default function Sidebar({ setPage, sidebarOpen, setSidebarOpen, role = "
         <div className="fixed inset-0 bg-black/50 z-40 md:hidden" onClick={() => setSidebarOpen(false)} />
       )}
 
-      <div className={`fixed z-50 top-0 left-0 w-72 h-screen bg-gradient-to-b from-slate-950 to-slate-900 text-white flex flex-col overflow-hidden transition-transform duration-300 md:relative md:translate-x-0 md:h-screen ${sidebarOpen ? "translate-x-0" : "-translate-x-full"}`}>
+<div className={`fixed z-50 top-0 left-0 w-72 bg-gradient-to-b from-slate-950 to-slate-900 text-white flex flex-col overflow-hidden transition-transform duration-300 md:relative md:translate-x-0 ${sidebarOpen ? "translate-x-0" : "-translate-x-full"}`} style={{ height: '100dvh' }}>
 
         {/* CLOSE BUTTON - mobile */}
         <div className="md:hidden p-4 flex justify-end flex-shrink-0">
