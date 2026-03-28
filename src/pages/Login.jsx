@@ -2,6 +2,9 @@ import { useState } from "react";
 import logo from "../assets/NexBills Logo.png";
 import API from "../api";
 
+const WHATSAPP_NUMBER = "918870227879"; // ⭐ Change this
+const SUPPORT_EMAIL = "support@nexorbizs.com"; // ⭐ Change this
+
 export default function Login({ setIsLoggedIn }) {
 
   const [email, setEmail] = useState("");
@@ -9,14 +12,16 @@ export default function Login({ setIsLoggedIn }) {
   const [loading, setLoading] = useState(false);
   const [subError, setSubError] = useState(null);
 
-  // ⭐ FORGOT PASSWORD STATE
-  const [step, setStep] = useState("login"); // "login" | "forgot" | "otp" | "reset"
+  const [step, setStep] = useState("login"); // "login" | "forgot" | "otp" | "reset" | "contact"
   const [forgotEmail, setForgotEmail] = useState("");
   const [otp, setOtp] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [otpLoading, setOtpLoading] = useState(false);
   const [resendTimer, setResendTimer] = useState(0);
+
+  // ⭐ Contact form state
+  const [contactForm, setContactForm] = useState({ name: "", email: "", message: "" });
 
   /* ================= RESEND TIMER ================= */
 
@@ -150,7 +155,8 @@ export default function Login({ setIsLoggedIn }) {
     if (e.key === "Enter") handleLogin();
   };
 
-  // ⭐ SHARED BACKGROUND
+  /* ================= SHARED BACKGROUND ================= */
+
   const bg = (
     <>
       <div className="absolute inset-0">
@@ -183,6 +189,74 @@ export default function Login({ setIsLoggedIn }) {
 
   const inputClass = "w-full border border-white/30 bg-white/10 p-3 rounded-xl placeholder-white/60 focus:outline-none focus:ring-2 focus:ring-indigo-500";
   const btnClass = "w-full bg-indigo-600 hover:bg-indigo-700 text-white p-3 rounded-xl font-semibold transition";
+
+  /* ================= STEP: CONTACT ================= */
+
+  if (step === "contact") {
+    return (
+      <div className="relative min-h-screen flex items-center justify-center overflow-hidden bg-black p-6">
+        {bg}
+        <div className="relative z-10 bg-white/10 backdrop-blur-xl border border-white/20 w-full max-w-md p-8 md:p-10 rounded-3xl shadow-2xl text-white">
+          {logoBlock}
+          <h2 className="text-lg font-semibold mb-2 text-center">Contact Us</h2>
+          <p className="text-slate-400 text-sm text-center mb-6">We'll get back to you via WhatsApp or Email</p>
+
+          <input
+            placeholder="Your Name *"
+            value={contactForm.name}
+            autoFocus
+            onChange={e => setContactForm({ ...contactForm, name: e.target.value })}
+            className={`${inputClass} mb-3`}
+          />
+          <input
+            placeholder="Your Email"
+            value={contactForm.email}
+            onChange={e => setContactForm({ ...contactForm, email: e.target.value })}
+            className={`${inputClass} mb-3`}
+          />
+          <textarea
+            placeholder="Your Message... *"
+            value={contactForm.message}
+            onChange={e => setContactForm({ ...contactForm, message: e.target.value })}
+            rows={4}
+            className={`${inputClass} mb-4 resize-none`}
+          />
+
+          <div className="grid grid-cols-2 gap-3 mb-3">
+            <button
+              onClick={() => {
+                if (!contactForm.name || !contactForm.message) return alert("Name & Message required");
+                const msg = encodeURIComponent(
+                  `Hi NexBills! 👋\n\nName: ${contactForm.name}\nEmail: ${contactForm.email || "—"}\n\nMessage:\n${contactForm.message}`
+                );
+                window.open(`https://wa.me/${WHATSAPP_NUMBER}?text=${msg}`, "_blank");
+              }}
+              className="bg-green-600 hover:bg-green-700 text-white p-3 rounded-xl font-semibold transition text-sm"
+            >
+              📱 WhatsApp
+            </button>
+            <button
+              onClick={() => {
+                if (!contactForm.name || !contactForm.message) return alert("Name & Message required");
+                const subject = encodeURIComponent(`NexBills Enquiry - ${contactForm.name}`);
+                const body = encodeURIComponent(
+                  `Name: ${contactForm.name}\nEmail: ${contactForm.email || "—"}\n\nMessage:\n${contactForm.message}`
+                );
+                window.open(`mailto:${SUPPORT_EMAIL}?subject=${subject}&body=${body}`);
+              }}
+              className="bg-blue-600 hover:bg-blue-700 text-white p-3 rounded-xl font-semibold transition text-sm"
+            >
+              ✉️ Email
+            </button>
+          </div>
+
+          <button onClick={() => setStep("login")} className="w-full text-slate-400 hover:text-white text-sm text-center transition">
+            ← Back to Login
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   /* ================= STEP: FORGOT EMAIL ================= */
 
@@ -244,7 +318,6 @@ export default function Login({ setIsLoggedIn }) {
             {otpLoading ? "Verifying..." : "Verify OTP"}
           </button>
 
-          {/* Resend OTP */}
           <div className="text-center mb-3">
             {resendTimer > 0 ? (
               <p className="text-slate-400 text-sm">Resend OTP in {resendTimer}s</p>
@@ -290,10 +363,9 @@ export default function Login({ setIsLoggedIn }) {
             value={confirmPassword}
             onChange={e => setConfirmPassword(e.target.value)}
             onKeyDown={e => e.key === "Enter" && handleResetPassword()}
-            className={`${inputClass} mb-6`}
+            className={`${inputClass} mb-4`}
           />
 
-          {/* Password match indicator */}
           {confirmPassword && (
             <p className={`text-xs mb-4 ${newPassword === confirmPassword ? "text-green-400" : "text-red-400"}`}>
               {newPassword === confirmPassword ? "✅ Passwords match" : "❌ Passwords do not match"}
@@ -326,7 +398,7 @@ export default function Login({ setIsLoggedIn }) {
           <div className="bg-red-500/20 border border-red-500/50 rounded-xl p-4 mb-4 text-center">
             <p className="text-red-300 text-sm font-semibold">🚫 Access Blocked</p>
             <p className="text-red-200 text-sm mt-1">{subError}</p>
-            <p className="text-red-300 text-xs mt-2">Contact: support@nexorbizs.com</p>
+            <p className="text-red-300 text-xs mt-2">Contact: {SUPPORT_EMAIL}</p>
           </div>
         )}
 
@@ -348,7 +420,6 @@ export default function Login({ setIsLoggedIn }) {
           className={`${inputClass} mb-2`}
         />
 
-        {/* ⭐ FORGOT PASSWORD LINK */}
         <div className="text-right mb-6">
           <button
             onClick={() => { setStep("forgot"); setForgotEmail(email); }}
@@ -361,6 +432,18 @@ export default function Login({ setIsLoggedIn }) {
         <button onClick={handleLogin} disabled={loading} className={btnClass}>
           {loading ? "Logging in..." : "Login to NexBills"}
         </button>
+
+        {/* ⭐ Contact Us link */}
+        <p className="text-center text-slate-400 text-xs mt-4">
+          Need help?{" "}
+          <button
+            onClick={() => setStep("contact")}
+            className="text-indigo-300 hover:text-indigo-200 underline"
+          >
+            Contact Us
+          </button>
+        </p>
+
       </div>
     </div>
   );
