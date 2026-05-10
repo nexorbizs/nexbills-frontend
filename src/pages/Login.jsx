@@ -2,8 +2,8 @@ import { useState } from "react";
 import logo from "../assets/NexBills Logo.png";
 import API from "../api";
 
-const WHATSAPP_NUMBER = "918870227879"; // ⭐ Change this
-const SUPPORT_EMAIL = "support@nexorbizs.com"; // ⭐ Change this
+const WHATSAPP_NUMBER = "918870227879";
+const SUPPORT_EMAIL = "support@nexorbizs.com";
 
 export default function Login({ setIsLoggedIn }) {
 
@@ -12,7 +12,7 @@ export default function Login({ setIsLoggedIn }) {
   const [loading, setLoading] = useState(false);
   const [subError, setSubError] = useState(null);
 
-  const [step, setStep] = useState("login"); // "login" | "forgot" | "otp" | "reset" | "contact"
+  const [step, setStep] = useState("login");
   const [forgotEmail, setForgotEmail] = useState("");
   const [otp, setOtp] = useState("");
   const [newPassword, setNewPassword] = useState("");
@@ -20,7 +20,6 @@ export default function Login({ setIsLoggedIn }) {
   const [otpLoading, setOtpLoading] = useState(false);
   const [resendTimer, setResendTimer] = useState(0);
 
-  // ⭐ Contact form state
   const [contactForm, setContactForm] = useState({ name: "", email: "", message: "" });
 
   /* ================= RESEND TIMER ================= */
@@ -129,6 +128,9 @@ export default function Login({ setIsLoggedIn }) {
       }
 
       const { token, company, subscription, user } = res.data;
+
+      // ⭐ FIX: Clear old session data before saving new login
+      localStorage.clear();
 
       localStorage.setItem("token", token);
       localStorage.setItem("company", JSON.stringify(company));
@@ -433,7 +435,6 @@ export default function Login({ setIsLoggedIn }) {
           {loading ? "Logging in..." : "Login to NexBills"}
         </button>
 
-        {/* ⭐ Contact Us link */}
         <p className="text-center text-slate-400 text-xs mt-4">
           Need help?{" "}
           <button
