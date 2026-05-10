@@ -5,7 +5,6 @@ import { useState, useEffect } from "react";
 import toast from "react-hot-toast";
 import API from "../api";
 
-
 const PLAN_FEATURES = {
   trial:      { purchases: true,  suppliers: true,  branches: true,  reports: true,  activity: true,  staffUsers: true },
   basic:      { purchases: false, suppliers: false, branches: false, reports: false, activity: false, staffUsers: false },
@@ -25,13 +24,11 @@ export default function Sidebar({ setPage, sidebarOpen, setSidebarOpen, role = "
     JSON.parse(localStorage.getItem("subscription") || "null")
   );
 
-  // ⭐ Always fetch fresh plan from backend on load
   useEffect(() => {
     const fetchPlan = async () => {
       try {
         const res = await API.get("/subscriptions/my-plan");
         const fresh = res.data;
-
         const updated = {
           plan: fresh.plan,
           status: fresh.status,
@@ -40,7 +37,6 @@ export default function Sidebar({ setPage, sidebarOpen, setSidebarOpen, role = "
           daysLeft: subscription?.daysLeft ?? null,
           features: fresh.features,
         };
-
         localStorage.setItem("subscription", JSON.stringify(updated));
         setSubscription(updated);
       } catch (err) {
@@ -64,19 +60,19 @@ export default function Sidebar({ setPage, sidebarOpen, setSidebarOpen, role = "
   };
 
   const allMenu = [
-    { name: "Dashboard",  icon: LayoutDashboard, key: "dashboard", roles: ["OWNER", "MANAGER", "CASHIER"], feature: null },
-    { name: "Billing",    icon: ShoppingCart,    key: "billing",   roles: ["OWNER", "MANAGER", "CASHIER"], feature: null },
-    { name: "Customers",  icon: Users,           key: "customers", roles: ["OWNER", "MANAGER", "CASHIER"], feature: null },
-    { name: "Products",   icon: Package,         key: "products",  roles: ["OWNER", "MANAGER"],            feature: null },
-    { name: "Sales",      icon: Receipt,         key: "sales",     roles: ["OWNER", "MANAGER"],            feature: null },
-    { name: "Reports",    icon: BarChart3,  key: "reports",   roles: ["OWNER", "MANAGER"], feature: "reports" },
-    { name: "Suppliers",  icon: Truck,      key: "suppliers", roles: ["OWNER", "MANAGER"], feature: "supplier_management" },
-    { name: "Purchases",  icon: ShoppingBag,key: "purchases", roles: ["OWNER", "MANAGER"], feature: "purchase_management" },
-    { name: "Activity",   icon: Activity,   key: "activity",  roles: ["OWNER"],            feature: "activity_log" },
-    { name: "Users",      icon: UserCog,    key: "users",     roles: ["OWNER"],            feature: "staff_role_management" },
-    { name: "Branches",   icon: Building2,  key: "branches",  roles: ["OWNER"],            feature: "multi_branch" },
-    { name: "Settings",   icon: Settings,        key: "settings",  roles: ["OWNER"],                       feature: null },
-    { name: "Support", icon: Headphones, key: "support", roles: ["OWNER", "MANAGER", "CASHIER"], feature: null },
+    { name: "Dashboard", icon: LayoutDashboard, key: "dashboard", roles: ["OWNER", "MANAGER", "CASHIER"], feature: null },
+    { name: "Billing",   icon: ShoppingCart,    key: "billing",   roles: ["OWNER", "MANAGER", "CASHIER"], feature: null },
+    { name: "Customers", icon: Users,           key: "customers", roles: ["OWNER", "MANAGER", "CASHIER"], feature: null },
+    { name: "Products",  icon: Package,         key: "products",  roles: ["OWNER", "MANAGER", "CASHIER"], feature: null }, // ⭐ CASHIER added
+    { name: "Sales",     icon: Receipt,         key: "sales",     roles: ["OWNER", "MANAGER"],            feature: null },
+    { name: "Reports",   icon: BarChart3,       key: "reports",   roles: ["OWNER", "MANAGER"],            feature: "reports" },
+    { name: "Suppliers", icon: Truck,           key: "suppliers", roles: ["OWNER", "MANAGER"],            feature: "supplier_management" },
+    { name: "Purchases", icon: ShoppingBag,     key: "purchases", roles: ["OWNER", "MANAGER"],            feature: "purchase_management" },
+    { name: "Activity",  icon: Activity,        key: "activity",  roles: ["OWNER"],                       feature: "activity_log" },
+    { name: "Users",     icon: UserCog,         key: "users",     roles: ["OWNER"],                       feature: "staff_role_management" },
+    { name: "Branches",  icon: Building2,       key: "branches",  roles: ["OWNER"],                       feature: "multi_branch" },
+    { name: "Settings",  icon: Settings,        key: "settings",  roles: ["OWNER"],                       feature: null },
+    { name: "Support",   icon: Headphones,      key: "support",   roles: ["OWNER", "MANAGER", "CASHIER"], feature: null },
   ];
 
   const menu = allMenu.filter(item => item.roles.includes(role));
@@ -110,14 +106,12 @@ export default function Sidebar({ setPage, sidebarOpen, setSidebarOpen, role = "
         <div className="fixed inset-0 bg-black/50 z-40 md:hidden" onClick={() => setSidebarOpen(false)} />
       )}
 
-<div className={`fixed z-50 top-0 left-0 w-72 bg-gradient-to-b from-slate-950 to-slate-900 text-white flex flex-col overflow-hidden transition-transform duration-300 md:relative md:translate-x-0 ${sidebarOpen ? "translate-x-0" : "-translate-x-full"}`} style={{ height: '100dvh' }}>
+      <div className={`fixed z-50 top-0 left-0 w-72 bg-gradient-to-b from-slate-950 to-slate-900 text-white flex flex-col overflow-hidden transition-transform duration-300 md:relative md:translate-x-0 ${sidebarOpen ? "translate-x-0" : "-translate-x-full"}`} style={{ height: '100dvh' }}>
 
-        {/* CLOSE BUTTON - mobile */}
         <div className="md:hidden p-4 flex justify-end flex-shrink-0">
           <button onClick={() => setSidebarOpen(false)}><X size={24} /></button>
         </div>
 
-        {/* HEADER */}
         <div className="p-6 border-b border-slate-800 flex-shrink-0">
           <div className="flex items-center gap-3">
             <img src={logo} alt="NexBills" className="w-10 h-10 rounded-full bg-white p-1" />
@@ -149,7 +143,6 @@ export default function Sidebar({ setPage, sidebarOpen, setSidebarOpen, role = "
           )}
         </div>
 
-        {/* MENU */}
         <div className="flex-1 px-4 py-6 space-y-2 overflow-y-auto min-h-0">
           {menu.map(item => {
             const Icon = item.icon;
@@ -172,7 +165,6 @@ export default function Sidebar({ setPage, sidebarOpen, setSidebarOpen, role = "
           })}
         </div>
 
-        {/* LOGOUT */}
         <div className="p-6 border-t border-slate-800 flex-shrink-0">
           <button onClick={handleLogout} className="w-full flex items-center justify-center gap-2 bg-red-500 hover:bg-red-600 py-3 rounded-xl font-semibold transition">
             <LogOut size={18} /> Logout
